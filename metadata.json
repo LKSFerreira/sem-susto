@@ -1,0 +1,7 @@
+{
+  "name": "Preço Certo",
+  "description": "Gerenciador de carrinho de compras com scanner de código de barras e controle de orçamento.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
