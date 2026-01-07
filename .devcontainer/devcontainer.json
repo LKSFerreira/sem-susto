@@ -1,0 +1,21 @@
+{
+    "name": "Node.js & TypeScript Dev Env",
+    "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
+    "features": {
+        "ghcr.io/devcontainers/features/common-utils:1": {
+            "configureZshAsDefaultShell": true
+        }
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "dbaeumer.vscode-eslint",
+                "esbenp.prettier-vscode",
+                "dsznajder.es7-react-js-snippets"
+            ]
+        }
+    },
+    "forwardPorts": [5173],
+    "postCreateCommand": "npm install",
+    "remoteUser": "node"
+}
