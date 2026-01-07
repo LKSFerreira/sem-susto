@@ -57,8 +57,9 @@ Consumidores frequentemente perdem o controle do valor total durante compras, re
 
 ### Infraestrutura
 
+- **Supabase** — PostgreSQL gerenciado + Autenticação + API REST
 - **Dev Containers** — Ambiente de desenvolvimento isolado e reproduzível
-- **LocalStorage API** — Persistência de dados no navegador
+- **Docker Compose** — PostgreSQL local para desenvolvimento
 
 ---
 
@@ -84,8 +85,8 @@ code .
 #    Ou use: Ctrl+Shift+P → "Dev Containers: Reopen in Container"
 
 # 4. Configure a variável de ambiente
-cp .env.local.example .env.local
-# Edite .env.local e adicione sua API_KEY
+cp .env.example .env.local
+# Edite .env.local e adicione suas chaves (Gemini e Supabase)
 
 # 5. Execute o projeto
 npm run dev
