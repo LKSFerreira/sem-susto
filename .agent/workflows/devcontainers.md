@@ -128,3 +128,15 @@ Adicione ao `.gitignore`:
 - [ ] App é acessível na porta configurada (ex: `localhost:5173`)
 - [ ] Banco de dados conecta corretamente
 - [ ] Alterações no código são refletidas automaticamente (hot reload)
+
+---
+
+## 8. Limpeza: Remover Templates (OBRIGATÓRIO)
+
+Após copiar o template para `.devcontainer/`, **remova o diretório de templates** pois ele já cumpriu seu propósito:
+
+```bash
+rm -rf .agent/templates/
+```
+
+> **Motivo:** Os templates são usados apenas na inicialização do projeto. Mantê-los no repositório gera duplicação desnecessária.
