@@ -1,0 +1,44 @@
+# =============================================================================
+# Docker Compose - Preço Certo
+# =============================================================================
+# Para desenvolver: docker compose up
+# Para parar: Ctrl+C ou docker compose down
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # DATABASE - PostgreSQL para desenvolvimento local
+  # ---------------------------------------------------------------------------
+  database:
+    image: "postgres:16-alpine"
+    env_file:
+      - ../.env.development
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  # ---------------------------------------------------------------------------
+  # APP - Node.js com Vite
+  # ---------------------------------------------------------------------------
+  app:
+    image: "node:20-alpine"
+    ports:
+      - "5173:5173"
+    volumes:
+      - ../:/app
+      - /app/node_modules
+    working_dir: /app
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    stdin_open: true
+    tty: true
+    env_file:
+      - ../.env.development
+    environment:
+      - NODE_ENV=development
+      - WATCHPACK_POLLING=true
+    depends_on:
+      - database
+
+volumes:
+  postgres-data:
