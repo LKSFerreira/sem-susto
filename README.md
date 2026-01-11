@@ -19,7 +19,7 @@
 
 ---
 
-## � Sobre o Projeto
+## 📚 Sobre o Projeto
 
 **Preço Certo** é um aplicativo web mobile-first que resolve um problema comum: a surpresa no caixa do supermercado. Com ele, você escaneia os produtos durante a compra e acompanha o total acumulado em tempo real.
 
@@ -58,7 +58,7 @@ Consumidores frequentemente perdem o controle do valor total durante compras, re
 ### Infraestrutura
 
 - **Supabase** — PostgreSQL gerenciado + Autenticação + API REST
-- **Dev Containers** — Ambiente de desenvolvimento isolado e reproduzível
+- **Docker Compose** — Ambiente de desenvolvimento isolado e reproduzível
 - **Docker Compose** — PostgreSQL local para desenvolvimento
 
 ---
