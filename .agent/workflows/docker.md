@@ -18,7 +18,7 @@ Este workflow configura o ambiente de desenvolvimento usando Docker Compose puro
 ## 1. Criar Estrutura
 
 ```bash
-mkdir -p .devcontainer
+mkdir -p .docker
 ```
 
 ---
@@ -38,17 +38,17 @@ Verifique os templates disponíveis em `.agent/templates/.devcontainer/`:
 | Go                        | `go/`                 |
 | Rust                      | `rust/`               |
 
-Copie o `compose.yaml` do template para `.devcontainer/`:
+Copie o `compose.yaml` do template para `.docker/`:
 
 ```bash
-cp .agent/templates/.devcontainer/<linguagem>/compose.yaml .devcontainer/
+cp .agent/templates/.devcontainer/<linguagem>/compose.yaml .docker/
 ```
 
 ---
 
 ## 3. Criar Arquivo de Variáveis de Ambiente
 
-Crie `.env.development` na **raiz do projeto** (não dentro de `.devcontainer/`):
+Crie `.env.development` na **raiz do projeto** (não dentro de `.docker/`):
 
 ```bash
 # PostgreSQL
@@ -71,7 +71,7 @@ DATABASE_URL=postgresql://postgres:postgres@database:5432/nome_do_projeto
 
 ```
 projeto/
-├── .devcontainer/
+├── .docker/
 │   └── compose.yaml          # Docker Compose
 ├── .env.development          # Variáveis de ambiente
 ├── src/                      # Código fonte
@@ -83,7 +83,7 @@ projeto/
 ## 5. Executar o Ambiente
 
 ```bash
-cd .devcontainer
+cd .docker
 docker compose up
 ```
 
@@ -133,7 +133,7 @@ Adicione ao `.gitignore`:
 
 ## 8. Limpeza: Remover Templates (OBRIGATÓRIO)
 
-Após copiar o template para `.devcontainer/`, **remova o diretório de templates** pois ele já cumpriu seu propósito:
+Após copiar o template para `.docker/`, **remova o diretório de templates** pois ele já cumpriu seu propósito:
 
 ```bash
 rm -rf .agent/templates/
