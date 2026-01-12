@@ -1,12 +1,13 @@
 import { ServicoLeituraRotulo } from "./tipos";
 import { ServicoIAGemini } from "./gemini";
 import { ServicoIAOpenRouter } from "./openrouter";
+import { ServicoIAGroq } from "./groq";
 import { ServicoIAMock } from "./mock";
 
 export class FabricaServicoIA {
   static criar(): ServicoLeituraRotulo {
-    // Prioriza a nova variável genérica
-    const apiKey = import.meta.env.VITE_OPENROUTER_TOKEN || import.meta.env.VITE_GOOGLE_TOKEN;
+    // Prioriza variável dedicada para Groq, se não tenta a genérica
+    const apiKey = import.meta.env.VITE_GROQ_TOKEN || import.meta.env.VITE_OPENROUTER_TOKEN;
     
     // Se não tiver chave válida, usa Mock
     if (!apiKey || apiKey === 'PLACEHOLDER_API_KEY') {
@@ -14,12 +15,11 @@ export class FabricaServicoIA {
       return new ServicoIAMock();
     }
 
-    // Como o usuário definiu OpenRouter como padrão principal:
-    console.log("🏭 FabricaIA: Usando serviço OPENROUTER");
-    return new ServicoIAOpenRouter(apiKey);
+    // Padrão agora é Groq (Mais rápido e Free Tier generoso)
+    console.log("🏭 FabricaIA: Usando serviço GROQ");
+    return new ServicoIAGroq(apiKey);
     
-    // Futuro: Se quiser lógica de decisão dinâmica:
-    // if (provider === 'gemini') return new ServicoIAGemini(apiKey);
+    // Fallback ou toggle manual poderia ser implementado aqui
   }
 }
 
