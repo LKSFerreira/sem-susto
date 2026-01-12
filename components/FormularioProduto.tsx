@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Produto } from '../types';
 import { REGEX_UNIDADE } from '../constants';
 import { comprimirImagem, obterImagemRecortada } from '../services/utilitarios';
@@ -26,6 +26,12 @@ export const FormularioProduto: React.FC<PropsFormulario> = ({
   const [preco, setPreco] = useState('');
   const [foto, setFoto] = useState<string | undefined>(undefined);
   const [erro, setErro] = useState<string | null>(null);
+  const [campoComErro, setCampoComErro] = useState<string | null>(null);
+  
+  // Refs para foco automático em campos inválidos
+  const refNome = useRef<HTMLInputElement>(null);
+  const refTamanho = useRef<HTMLInputElement>(null);
+  const refPreco = useRef<HTMLInputElement>(null);
   
   // Estado para recorte
   const [imagemParaRecorte, setImagemParaRecorte] = useState<string | null>(null);
@@ -120,22 +126,33 @@ export const FormularioProduto: React.FC<PropsFormulario> = ({
   const validarESalvar = (e: React.FormEvent) => {
     e.preventDefault();
     setErro(null);
+    setCampoComErro(null);
 
-    if (tamanho && !REGEX_UNIDADE.test(tamanho)) {
-      setErro('Tamanho inválido (Ex: 1L, 500g).');
+    // Validação em ordem lógica dos campos (de cima para baixo)
+    // 1. Nome (obrigatório)
+    if (!nome.trim()) {
+      setErro('O nome do produto é obrigatório.');
+      setCampoComErro('nome');
+      refNome.current?.focus();
       return;
     }
 
+    // 2. Tamanho (formato válido se preenchido)
+    if (tamanho && !REGEX_UNIDADE.test(tamanho)) {
+      setErro('Tamanho inválido (Ex: 1L, 500g).');
+      setCampoComErro('tamanho');
+      refTamanho.current?.focus();
+      return;
+    }
+
+    // 3. Preço (obrigatório e > 0)
     const precoLimpo = preco.replace(/\./g, '').replace(',', '.');
     const precoNumerico = parseFloat(precoLimpo);
 
     if (isNaN(precoNumerico) || precoNumerico <= 0) {
       setErro('O preço é obrigatório.');
-      return;
-    }
-
-    if (!nome.trim()) {
-      setErro('O nome do produto é obrigatório.');
+      setCampoComErro('preco');
+      refPreco.current?.focus();
       return;
     }
 
@@ -263,7 +280,7 @@ export const FormularioProduto: React.FC<PropsFormulario> = ({
           <div className="flex flex-col gap-3 flex-1">
             <div>
               <label className={classeLabel}>Nome do Produto</label>
-              <input value={nome} onChange={e => setNome(e.target.value)} className={`${classeInput} ${analisandoIA ? 'animate-pulse bg-gray-600' : ''}`} placeholder="Ex: Leite Integral" disabled={analisandoIA} />
+              <input ref={refNome} value={nome} onChange={e => { setNome(e.target.value); if (campoComErro === 'nome') setCampoComErro(null); }} className={`${classeInput} ${analisandoIA ? 'animate-pulse bg-gray-600' : ''} ${campoComErro === 'nome' ? 'border-red-500 ring-2 ring-red-400' : ''}`} placeholder="Ex: Leite Integral" disabled={analisandoIA} />
             </div>
             <div className="flex gap-3">
               <div className="flex-[3]">
@@ -272,12 +289,12 @@ export const FormularioProduto: React.FC<PropsFormulario> = ({
               </div>
               <div className="flex-[2]">
                 <label className={classeLabel}>Tamanho</label>
-                <input value={tamanho} onChange={e => setTamanho(e.target.value)} className={`${classeInput} ${tamanho && !REGEX_UNIDADE.test(tamanho) ? 'border-red-400 text-red-100' : ''} ${analisandoIA ? 'animate-pulse bg-gray-600' : ''}`} placeholder="Ex: 1L" disabled={analisandoIA} />
+                <input ref={refTamanho} value={tamanho} onChange={e => { setTamanho(e.target.value); if (campoComErro === 'tamanho') setCampoComErro(null); }} className={`${classeInput} ${tamanho && !REGEX_UNIDADE.test(tamanho) ? 'border-red-400 text-red-100' : ''} ${analisandoIA ? 'animate-pulse bg-gray-600' : ''} ${campoComErro === 'tamanho' ? 'border-red-500 ring-2 ring-red-400' : ''}`} placeholder="Ex: 1L" disabled={analisandoIA} />
               </div>
             </div>
             <div className="bg-gray-50 p-2 rounded-lg border border-gray-200">
                <label className="block text-xs font-bold text-verde-700 uppercase tracking-wide mb-1">Preço Unitário (R$) <span className="text-red-500">*</span></label>
-               <input type="tel" inputMode="numeric" value={preco} onChange={lidarMudancaPreco} className="w-full p-2 bg-white border-2 border-verde-500 rounded-lg text-gray-900 font-bold text-2xl placeholder-gray-300 focus:outline-none shadow-sm" placeholder="0,00" autoFocus={!analisandoIA && !produtoExistente} />
+               <input ref={refPreco} type="tel" inputMode="numeric" value={preco} onChange={e => { lidarMudancaPreco(e); if (campoComErro === 'preco') setCampoComErro(null); }} className={`w-full p-2 bg-white border-2 rounded-lg text-gray-900 font-bold text-2xl placeholder-gray-300 focus:outline-none shadow-sm ${campoComErro === 'preco' ? 'border-red-500 ring-2 ring-red-400' : 'border-verde-500'}`} placeholder="0,00" autoFocus={!analisandoIA && !produtoExistente} />
               <p className="text-[10px] text-gray-500 mt-1 text-right">Digite manualmente</p>
             </div>
           </div>
