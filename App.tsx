@@ -6,6 +6,7 @@ import { ScannerBarras } from './components/ScannerBarras';
 import { FormularioProduto } from './components/FormularioProduto';
 import { DebugConsole } from './components/DebugConsole';
 import { ModalDoacao } from './components/ModalDoacao';
+import { ModalConfirmacao } from './components/ModalConfirmacao';
 import { useRepositorios } from './contextos/ContextoRepositorios';
 
 export default function App() {
@@ -26,6 +27,8 @@ export default function App() {
   const [codigoLido, setCodigoLido] = useState<string | null>(null);
   
   const [mostrarDoacao, setMostrarDoacao] = useState(false);
+  const [mostrarConfirmacaoEsvaziar, setMostrarConfirmacaoEsvaziar] = useState(false);
+  const [mostrarConfirmacaoFinalizar, setMostrarConfirmacaoFinalizar] = useState(false);
 
   // --- Efeitos (Carregamento inicial) ---
   
@@ -201,15 +204,18 @@ export default function App() {
   }, [repositorioCarrinho]);
 
   /**
-   * Finaliza a compra atual.
+   * Abre modal de confirmação para finalizar compra.
    */
-  const finalizarCompra = useCallback(async () => {
+  const solicitarFinalizacao = useCallback(() => {
     if (carrinho.length === 0) return;
+    setMostrarConfirmacaoFinalizar(true);
+  }, [carrinho.length]);
 
-    // Confirmação simples
-    if (!window.confirm(`Finalizar compra de ${carrinho.length} itens no valor de ${formatarMoeda(calcularTotal)}?`)) {
-      return;
-    }
+  /**
+   * Executa a finalização da compra após confirmação do usuário.
+   */
+  const executarFinalizacao = useCallback(async () => {
+    setMostrarConfirmacaoFinalizar(false);
 
     try {
       // 1. Cria objeto de compra
@@ -227,43 +233,52 @@ export default function App() {
       await repositorioCarrinho.limpar();
       setCarrinho([]);
       
-      // 4. Feedback
-      alert('Compra finalizada com sucesso! ✅');
-      
-      // Feedback tátil
+      // 4. Feedback tátil
       if (typeof navigator !== 'undefined' && navigator.vibrate) {
         navigator.vibrate([100, 50, 100]);
       }
 
+      // 5. Abre modal de doação como agradecimento
+      setMostrarDoacao(true);
+
     } catch (erro) {
       console.error('Erro ao finalizar compra:', erro);
-      alert('Erro ao finalizar compra. Tente novamente.');
+      // Erro silencioso - o usuário já fechou o modal
     }
   }, [carrinho, calcularTotal, repositorioHistorico, repositorioCarrinho]);
 
   /**
-   * Limpa todo o carrinho após confirmação.
+   * Abre modal de confirmação para esvaziar carrinho.
    */
-  const limparCarrinho = useCallback(async () => {
+  const solicitarEsvaziamento = useCallback(() => {
     if (carrinho.length === 0) return;
+    setMostrarConfirmacaoEsvaziar(true);
+  }, [carrinho.length]);
 
-    if (window.confirm('Tem certeza que deseja esvaziar o carrinho?')) {
-      // Feedback tátil
-      if (typeof navigator !== 'undefined' && navigator.vibrate) {
-        navigator.vibrate(50);
-      }
-      
-      // Atualiza estado local
-      setCarrinho([]);
-
-      // Persiste no repositório
-      try {
-        await repositorioCarrinho.limpar();
-      } catch (erro) {
-        console.error('Erro ao limpar carrinho:', erro);
-      }
+  /**
+   * Executa a limpeza do carrinho após confirmação do usuário.
+   */
+  const executarEsvaziamento = useCallback(async () => {
+    setMostrarConfirmacaoEsvaziar(false);
+    
+    // Feedback tátil
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(50);
     }
-  }, [carrinho.length, repositorioCarrinho]);
+    
+    // Atualiza estado local
+    setCarrinho([]);
+
+    // Persiste no repositório
+    try {
+      await repositorioCarrinho.limpar();
+      
+      // Abre modal de doação
+      setMostrarDoacao(true);
+    } catch (erro) {
+      console.error('Erro ao limpar carrinho:', erro);
+    }
+  }, [repositorioCarrinho]);
 
   // --- Renderização ---
 
@@ -311,7 +326,7 @@ export default function App() {
             {/* Botão Esvaziar Carrinho */}
             {carrinho.length > 0 && (
               <button 
-                onClick={limparCarrinho}
+                onClick={solicitarEsvaziamento}
                 className="p-2 rounded-lg text-sm font-medium transition-colors bg-red-50 text-red-600 hover:bg-red-100"
                 title="Esvaziar carrinho"
               >
@@ -426,7 +441,7 @@ export default function App() {
 
             {carrinho.length > 0 && (
               <button 
-                onClick={finalizarCompra}
+                onClick={solicitarFinalizacao}
                 className="flex-1 bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-blue-700 active:transform active:scale-95 transition-all flex items-center justify-center gap-2"
               >
                 <i className="fas fa-check text-xl"></i>
@@ -467,6 +482,32 @@ export default function App() {
             setCodigoLido(null);
           }}
           produtoExistente={catalogo[codigoLido] || null}
+        />
+      )}
+
+      {/* Modal de Confirmação - Esvaziar Carrinho */}
+      {mostrarConfirmacaoEsvaziar && (
+        <ModalConfirmacao
+          titulo="Esvaziar Carrinho"
+          mensagem="Tem certeza que deseja remover todos os itens do carrinho?"
+          textoBotaoConfirmar="Esvaziar"
+          textoBotaoCancelar="Cancelar"
+          corBotaoConfirmar="vermelho"
+          aoConfirmar={executarEsvaziamento}
+          aoCancelar={() => setMostrarConfirmacaoEsvaziar(false)}
+        />
+      )}
+
+      {/* Modal de Confirmação - Finalizar Compra */}
+      {mostrarConfirmacaoFinalizar && (
+        <ModalConfirmacao
+          titulo="Finalizar Compra"
+          mensagem={`Confirma a compra de ${carrinho.length} ${carrinho.length === 1 ? 'item' : 'itens'} no valor de ${formatarMoeda(calcularTotal)}?`}
+          textoBotaoConfirmar="Finalizar"
+          textoBotaoCancelar="Voltar"
+          corBotaoConfirmar="verde"
+          aoConfirmar={executarFinalizacao}
+          aoCancelar={() => setMostrarConfirmacaoFinalizar(false)}
         />
       )}
 
