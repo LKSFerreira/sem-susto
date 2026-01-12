@@ -10,7 +10,7 @@ import { useRepositorios } from './contextos/ContextoRepositorios';
 
 export default function App() {
   // --- Acesso aos repositórios via contexto ---
-  const { produtos: repositorioProdutos, carrinho: repositorioCarrinho } = useRepositorios();
+  const { produtos: repositorioProdutos, carrinho: repositorioCarrinho, historico: repositorioHistorico } = useRepositorios();
 
   // --- Estados ---
   const [telaAtual, setTelaAtual] = useState<TelaApp>('DASHBOARD');
@@ -25,8 +25,6 @@ export default function App() {
   // Estado para fluxo de cadastro/adição
   const [codigoLido, setCodigoLido] = useState<string | null>(null);
   
-  // Configuração UI
-  const [mostrarFotos, setMostrarFotos] = useState(true);
   const [mostrarDoacao, setMostrarDoacao] = useState(false);
 
   // --- Efeitos (Carregamento inicial) ---
@@ -202,6 +200,71 @@ export default function App() {
     }
   }, [repositorioCarrinho]);
 
+  /**
+   * Finaliza a compra atual.
+   */
+  const finalizarCompra = useCallback(async () => {
+    if (carrinho.length === 0) return;
+
+    // Confirmação simples
+    if (!window.confirm(`Finalizar compra de ${carrinho.length} itens no valor de ${formatarMoeda(calcularTotal)}?`)) {
+      return;
+    }
+
+    try {
+      // 1. Cria objeto de compra
+      const novaCompra = {
+        id: crypto.randomUUID(),
+        data: new Date().toISOString(),
+        itens: [...carrinho],
+        total: calcularTotal
+      };
+
+      // 2. Salva no histórico
+      await repositorioHistorico.salvar(novaCompra);
+
+      // 3. Limpa o carrinho
+      await repositorioCarrinho.limpar();
+      setCarrinho([]);
+      
+      // 4. Feedback
+      alert('Compra finalizada com sucesso! ✅');
+      
+      // Feedback tátil
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate([100, 50, 100]);
+      }
+
+    } catch (erro) {
+      console.error('Erro ao finalizar compra:', erro);
+      alert('Erro ao finalizar compra. Tente novamente.');
+    }
+  }, [carrinho, calcularTotal, repositorioHistorico, repositorioCarrinho]);
+
+  /**
+   * Limpa todo o carrinho após confirmação.
+   */
+  const limparCarrinho = useCallback(async () => {
+    if (carrinho.length === 0) return;
+
+    if (window.confirm('Tem certeza que deseja esvaziar o carrinho?')) {
+      // Feedback tátil
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate(50);
+      }
+      
+      // Atualiza estado local
+      setCarrinho([]);
+
+      // Persiste no repositório
+      try {
+        await repositorioCarrinho.limpar();
+      } catch (erro) {
+        console.error('Erro ao limpar carrinho:', erro);
+      }
+    }
+  }, [carrinho.length, repositorioCarrinho]);
+
   // --- Renderização ---
 
   // Mostra loading enquanto carrega dados
@@ -245,15 +308,17 @@ export default function App() {
               <span className="hidden sm:inline">Apoiar</span>
             </button>
 
-            {/* Toggle Fotos */}
-            <button 
-              onClick={() => setMostrarFotos(!mostrarFotos)}
-              className={`p-2 rounded-lg text-sm font-medium transition-colors ${mostrarFotos ? 'bg-verde-50 text-verde-700' : 'bg-gray-100 text-gray-600'}`}
-              title={mostrarFotos ? 'Ocultar fotos' : 'Mostrar fotos'}
-            >
-              <i className={`fas ${mostrarFotos ? 'fa-image' : 'fa-list'} mr-1`}></i>
-              <span className="text-xs">{mostrarFotos ? 'Com Fotos' : 'Compacto'}</span>
-            </button>
+            {/* Botão Esvaziar Carrinho */}
+            {carrinho.length > 0 && (
+              <button 
+                onClick={limparCarrinho}
+                className="p-2 rounded-lg text-sm font-medium transition-colors bg-red-50 text-red-600 hover:bg-red-100"
+                title="Esvaziar carrinho"
+              >
+                <i className="fas fa-trash-alt mr-1"></i>
+                <span className="text-xs">Esvaziar</span>
+              </button>
+            )}
           </div>
         </div>
       </header>
@@ -271,16 +336,14 @@ export default function App() {
             {carrinho.map((item) => (
               <li key={item.codigo_barras} className="bg-white p-3 rounded-lg shadow-sm border border-gray-100 flex gap-3 animate-fade-in relative group">
                 
-                {/* Imagem (Condicional) */}
-                {mostrarFotos && (
-                  <div className="w-16 h-16 flex-shrink-0 bg-gray-100 rounded overflow-hidden">
+                {/* Imagem */}
+                <div className="w-16 h-16 flex-shrink-0 bg-gray-100 rounded overflow-hidden">
                     <img 
                       src={item.foto_base64 || IMAGEM_PADRAO} 
                       alt={item.nome} 
                       className="w-full h-full object-cover"
                     />
                   </div>
-                )}
 
                 {/* Conteúdo */}
                 <div className="flex-1 min-w-0 flex flex-col justify-between">
@@ -367,20 +430,32 @@ export default function App() {
             </span>
           </div>
 
-          <button 
-            onClick={() => setTelaAtual('SCANNER')}
-            className="w-full bg-verde-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-verde-700 active:transform active:scale-95 transition-all flex items-center justify-center gap-2"
-          >
-            <i className="fas fa-barcode text-xl"></i>
-            <span>Ler Código de Barras</span>
-          </button>
+          <div className="flex gap-3">
+            <button 
+              onClick={() => setTelaAtual('SCANNER')}
+              className="flex-1 bg-verde-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-verde-700 active:transform active:scale-95 transition-all flex items-center justify-center gap-2"
+            >
+              <i className="fas fa-barcode text-xl"></i>
+              <span>Ler Código</span>
+            </button>
+
+            {carrinho.length > 0 && (
+              <button 
+                onClick={finalizarCompra}
+                className="flex-1 bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-blue-700 active:transform active:scale-95 transition-all flex items-center justify-center gap-2"
+              >
+                <i className="fas fa-check text-xl"></i>
+                <span>Finalizar</span>
+              </button>
+            )}
+          </div>
         </div>
       </footer>
 
 
 
-      {/* Mobile Debugger */}
-      <DebugConsole />
+      {/* Mobile Debugger (Apenas Dev) */}
+      {import.meta.env.DEV && <DebugConsole />}
 
       {/* --- Modais e Telas Sobrepostas --- */}
 

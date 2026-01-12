@@ -16,7 +16,7 @@
  *     const repositorio = new RepositorioProdutosPostgres();
  */
 
-import { Produto, ItemCarrinho } from '../types';
+import { Produto, ItemCarrinho, Compra } from '../types';
 
 /**
  * Contrato para operações de persistência de produtos.
@@ -114,6 +114,25 @@ export interface RepositorioCarrinho {
 }
 
 /**
+ * Contrato para persistência do histórico de compras.
+ */
+export interface RepositorioHistorico {
+  /**
+   * Salva uma nova compra no histórico.
+   * 
+   * @param compra Objeto da compra finalizada
+   */
+  salvar(compra: Compra): Promise<void>;
+
+  /**
+   * Lista todas as compras realizadas.
+   * 
+   * @returns Lista de compras ordenadas (geralmente por data)
+   */
+  listarTodas(): Promise<Compra[]>;
+}
+
+/**
  * Agregador de todos os repositórios disponíveis.
  * 
  * Facilita a injeção de dependências via contexto React.
@@ -121,4 +140,5 @@ export interface RepositorioCarrinho {
 export interface Repositorios {
   produtos: RepositorioProdutos;
   carrinho: RepositorioCarrinho;
+  historico: RepositorioHistorico;
 }

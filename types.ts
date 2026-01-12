@@ -21,3 +21,11 @@ export type TelaApp = 'DASHBOARD' | 'SCANNER' | 'CADASTRO' | 'CARRINHO';
 export interface ConfiguracaoApp {
   mostrarFotos: boolean;
 }
+
+// Histórico de Compras
+export interface Compra {
+  id: string; // UUID ou Timestamp
+  data: string; // ISO String
+  itens: ItemCarrinho[];
+  total: number;
+}

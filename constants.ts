@@ -4,6 +4,7 @@ export const REGEX_UNIDADE = /^\d+(\.\d+)?\s?(L|ml|cm|mm|m|mg|g|kg|cm²)$/i;
 // Chave para persistência no LocalStorage
 export const CHAVE_STORAGE_CARRINHO = 'preco_certo_carrinho_v1';
 export const CHAVE_STORAGE_CATALOGO = 'preco_certo_catalogo_v1';
+export const CHAVE_STORAGE_HISTORICO = 'preco_certo_historico_v1';
 
 // Imagem placeholder (SVG Data URI)
 // Ícone: Sacola de compras verde estilizada com fundo suave, substituindo a cesta cinza.

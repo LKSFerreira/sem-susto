@@ -29,7 +29,8 @@ import React, { createContext, useContext, useMemo, ReactNode } from 'react';
 import { Repositorios } from '../repositorios/tipos-repositorio';
 import { 
   RepositorioProdutosLocalStorage, 
-  RepositorioCarrinhoLocalStorage 
+  RepositorioCarrinhoLocalStorage,
+  RepositorioHistoricoLocalStorage
 } from '../repositorios/local-storage';
 
 /**
@@ -81,6 +82,7 @@ export function ProvedorRepositorios({
     return {
       produtos: new RepositorioProdutosLocalStorage(),
       carrinho: new RepositorioCarrinhoLocalStorage(),
+      historico: new RepositorioHistoricoLocalStorage(),
     };
   }, [repositoriosCustomizados]);
 

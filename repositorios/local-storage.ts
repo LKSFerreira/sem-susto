@@ -14,9 +14,9 @@
  *     const produto = await repositorioProdutos.buscarPorCodigo("123");
  */
 
-import { Produto, ItemCarrinho } from '../types';
-import { RepositorioProdutos, RepositorioCarrinho } from './tipos-repositorio';
-import { CHAVE_STORAGE_CATALOGO, CHAVE_STORAGE_CARRINHO } from '../constants';
+import { Produto, ItemCarrinho, Compra } from '../types';
+import { RepositorioProdutos, RepositorioCarrinho, RepositorioHistorico } from './tipos-repositorio';
+import { CHAVE_STORAGE_CATALOGO, CHAVE_STORAGE_CARRINHO, CHAVE_STORAGE_HISTORICO } from '../constants';
 
 /**
  * Implementação do repositório de produtos usando localStorage.
@@ -167,5 +167,41 @@ export class RepositorioCarrinhoLocalStorage implements RepositorioCarrinho {
 
   async salvarTodos(itens: ItemCarrinho[]): Promise<void> {
     this.salvarCarrinho(itens);
+  }
+}
+
+/**
+ * Implementação do repositório de histórico usando localStorage.
+ */
+export class RepositorioHistoricoLocalStorage implements RepositorioHistorico {
+
+  private carregarHistorico(): Compra[] {
+    try {
+      const dados = localStorage.getItem(CHAVE_STORAGE_HISTORICO);
+      return dados ? JSON.parse(dados) : [];
+    } catch (erro) {
+      console.error('Erro ao carregar histórico:', erro);
+      return [];
+    }
+  }
+
+  private salvarHistorico(compras: Compra[]): void {
+    try {
+      localStorage.setItem(CHAVE_STORAGE_HISTORICO, JSON.stringify(compras));
+    } catch (erro) {
+      console.error('Erro ao salvar histórico:', erro);
+      throw new Error('Falha ao salvar histórico. Armazenamento cheio?');
+    }
+  }
+
+  async salvar(compra: Compra): Promise<void> {
+    const historico = this.carregarHistorico();
+    // Adiciona no início da lista (mais recente primeiro)
+    historico.unshift(compra);
+    this.salvarHistorico(historico);
+  }
+
+  async listarTodas(): Promise<Compra[]> {
+    return this.carregarHistorico();
   }
 }
