@@ -43,16 +43,17 @@
 
 ### Funcionalidades Core
 
-- [x] **0.5.6** Scanner funcionando (entrada manual OK, câmera real = Fase 4)
-- [x] **0.5.7** Cadastro de produto com IA (Gemini)
+- [x] **0.5.6** Scanner funcionando (entrada manual OK, câmera real implementada com `html5-qrcode`)
+- [x] **0.5.7** Cadastro de produto com IA (Gemini / OpenRouter)
 - [x] **0.5.8** Carrinho operacional (adicionar, remover, alterar quantidade)
 - [x] **0.5.9** Cálculo de total em tempo real
-- [ ] **0.5.10** Limpar carrinho / Finalizar compra (salvar histórico local)
+- [x] **0.5.10** In-app Debugger para mobile
+- [ ] **0.5.11** Limpar carrinho / Finalizar compra (salvar histórico local)
 
 ### Polimento
 
-- [x] **0.5.11** Testar fluxo completo no browser local
-- [ ] **0.5.12** Corrigir bugs encontrados
+- [x] **0.5.12** Testar fluxo completo no browser local
+- [x] **0.5.13** Corrigir bugs encontrados (Keyboard overlap, CORS, API Key security)
 
 **Critério de sucesso:** Usar o app do início ao fim no `localhost:5173` sem erros.
 
@@ -124,7 +125,7 @@
 > **Objetivo:** Experiência completa de app
 > **Duração:** 2 semanas
 
-- [ ] **4.1** Scanner real com `html5-qrcode`
+- [x] **4.1** Scanner real com `html5-qrcode` (Adiantado para MVP)
 - [ ] **4.2** Histórico de compras
 - [ ] **4.3** PWA (instalável, offline básico)
 - [ ] **4.4** Pesquisa de produtos

@@ -52,14 +52,15 @@ Consumidores frequentemente perdem o controle do valor total durante compras, re
 
 ### Inteligência Artificial
 
-- **Google Gemini API** — Visão computacional para leitura de rótulos
+- **Google Gemini / OpenRouter** — Visão computacional via Strategy Pattern
 - **Structured Output** — Respostas em JSON com schema validado
+- **html5-qrcode** — Scanner de código de barras via câmera
 
 ### Infraestrutura
 
 - **Supabase** — PostgreSQL gerenciado + Autenticação + API REST
 - **Docker Compose** — Ambiente de desenvolvimento isolado e reproduzível
-- **Docker Compose** — PostgreSQL local para desenvolvimento
+- **PostgreSQL** — Banco de dados local para desenvolvimento
 
 ---
 
@@ -68,7 +69,7 @@ Consumidores frequentemente perdem o controle do valor total durante compras, re
 ### Pré-requisitos
 
 - [Docker](https://www.docker.com/) instalado
-- Chave de API do [Google AI Studio](https://aistudio.google.com/)
+- Chave de API do [OpenRouter](https://openrouter.ai/) (Recomendado) ou [Google AI Studio](https://aistudio.google.com/)
 
 ### Setup com Docker Compose (Recomendado)
 
@@ -79,17 +80,13 @@ cd preco-certo
 
 # 2. Configure as variáveis de ambiente
 cp .env.example .env.local
-# Edite .env.local e adicione suas chaves (Gemini e Supabase)
+# Edite .env.local e adicione sua chave em VITE_OPENROUTER_TOKEN
 
 # 3. Suba os containers
-docker compose -f .docker/compose.yaml up -d
+docker compose -f .docker/compose.yaml up -d --build
 
-# 4. Acesse o container da aplicação
-docker compose -f .docker/compose.yaml exec app bash
-
-# 5. Dentro do container, execute o projeto
-npm install
-npm run dev
+# 4. Acesse a aplicação
+# Abra http://localhost:5173 no navegador
 ```
 
 O app estará disponível em `http://localhost:5173`
