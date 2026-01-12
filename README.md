@@ -68,27 +68,27 @@ Consumidores frequentemente perdem o controle do valor total durante compras, re
 ### Pré-requisitos
 
 - [Docker](https://www.docker.com/) instalado
-- [VS Code](https://code.visualstudio.com/) com extensão [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
 - Chave de API do [Google AI Studio](https://aistudio.google.com/)
 
-### Setup com Dev Container (Recomendado)
+### Setup com Docker Compose (Recomendado)
 
 ```bash
 # 1. Clone o repositório
 git clone https://github.com/LKSFerreira/preco-certo.git
 cd preco-certo
 
-# 2. Abra no VS Code
-code .
-
-# 3. Quando solicitado, clique em "Reopen in Container"
-#    Ou use: Ctrl+Shift+P → "Dev Containers: Reopen in Container"
-
-# 4. Configure a variável de ambiente
+# 2. Configure as variáveis de ambiente
 cp .env.example .env.local
 # Edite .env.local e adicione suas chaves (Gemini e Supabase)
 
-# 5. Execute o projeto
+# 3. Suba os containers
+docker compose -f .docker/compose.yaml up -d
+
+# 4. Acesse o container da aplicação
+docker compose -f .docker/compose.yaml exec app bash
+
+# 5. Dentro do container, execute o projeto
+npm install
 npm run dev
 ```
 
@@ -108,10 +108,11 @@ npm run dev
 
 ```
 preco-certo/
-├── .devcontainer/          # Configuração do ambiente Docker
+├── .docker/                # Arquivos Docker Compose
 ├── .metadocs/              # Documentação de projeto
-│   ├── roadmap.md          # Planejamento de features
-│   └── escopo.md           # Definição do produto
+│   └── roadmap.md          # Planejamento de features
+├── contextos/              # Contextos React (injeção de dependências)
+├── repositorios/           # Camada de persistência (Repository Pattern)
 ├── components/             # Componentes React reutilizáveis
 │   ├── ScannerBarras.tsx   # Interface do scanner
 │   ├── FormularioProduto.tsx # Cadastro com IA

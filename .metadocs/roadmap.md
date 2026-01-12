@@ -1,118 +1,134 @@
 # Roadmap - Preço Certo 🛒
 
-## Decisão Técnica: Supabase Auth
+## Filosofia de Desenvolvimento
 
-> **Escolha:** Supabase Auth (em vez de Firebase Auth)
-
-### Por que Supabase Auth?
+> **Princípio:** Aplicação funcionando primeiro, infraestrutura depois.
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│   COM FIREBASE AUTH          │   COM SUPABASE AUTH      │
-├─────────────────────────────────────────────────────────┤
-│   Firebase (Auth)            │   Supabase               │
-│        +                     │   (Auth + DB + API)      │
-│   Supabase (DB + API)        │                          │
-│        =                     │        =                 │
-│   2 serviços para gerenciar  │   1 serviço              │
-│   2 SDKs diferentes          │   1 SDK                  │
-│   2 dashboards               │   1 dashboard            │
-└─────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────┐
+│  FASE 0.5   │  FASE 1      │  FASE 2        │  FASE 3        │
+│  MVP Local  │  Deploy      │  PostgreSQL    │  Auth + RLS    │
+│  ─────────  │  ─────────   │  ─────────     │  ─────────     │
+│  localStorage│  Vercel      │  Local + Prod  │  Supabase Auth │
+│  Repository  │  Funcional   │  Coexistindo   │  Row Level Sec │
+│  Pattern     │              │                │                │
+└───────────────────────────────────────────────────────────────┘
 ```
-
-**Motivos da escolha:**
-
-1. **Simplicidade** — Um único serviço para Auth + Database + API
-2. **Menos dependências** — Um SDK em vez de dois
-3. **RLS integrado** — As políticas de segurança usam o mesmo `auth.users`
-4. **Menos configuração** — Não precisa sincronizar IDs entre Firebase e Supabase
-5. **Custo** — Ambos são gratuitos, mas gerenciar um serviço é mais simples
-
-> [!NOTE]
-> Firebase Auth é excelente, mas para este projeto usar Supabase para tudo evita
-> complexidade desnecessária. Se precisarmos de features específicas do Firebase
-> (como push notifications), podemos adicionar depois.
 
 ---
 
-## Visão do Produto
+## Fase 0: Ambiente de Desenvolvimento ✅
 
-Aplicativo web (PWA) para controle de gastos em compras de supermercado, com scanner de código de barras, catálogo pessoal de produtos, e sincronização em nuvem.
+> **Status:** Concluída
+
+- [x] **0.1** Docker Compose configurado
+- [x] **0.2** Estrutura de variáveis de ambiente
+- [x] **0.3** README documentado
 
 ---
 
-## Fase 0: Ambiente de Desenvolvimento 🔧
+## Fase 0.5: MVP Funcional Local 🚧
 
-> **Objetivo:** Dev Container configurado e funcional
+> **Objetivo:** App 100% funcional no browser usando localStorage
+> **Arquitetura:** Repository Pattern para facilitar migração futura
+> **Duração:** 2-3 dias
+
+### Preparação da Arquitetura
+
+- [x] **0.5.1** Criar interface `RepositorioProdutos` (contrato abstrato)
+- [x] **0.5.2** Criar interface `RepositorioCarrinho` (contrato abstrato)
+- [x] **0.5.3** Implementar `RepositorioProdutosLocalStorage`
+- [x] **0.5.4** Implementar `RepositorioCarrinhoLocalStorage`
+- [x] **0.5.5** Criar contexto React para injeção de repositórios
+
+### Funcionalidades Core
+
+- [x] **0.5.6** Scanner funcionando (entrada manual OK, câmera real = Fase 4)
+- [x] **0.5.7** Cadastro de produto com IA (Gemini)
+- [x] **0.5.8** Carrinho operacional (adicionar, remover, alterar quantidade)
+- [x] **0.5.9** Cálculo de total em tempo real
+- [ ] **0.5.10** Limpar carrinho / Finalizar compra (salvar histórico local)
+
+### Polimento
+
+- [x] **0.5.11** Testar fluxo completo no browser local
+- [ ] **0.5.12** Corrigir bugs encontrados
+
+**Critério de sucesso:** Usar o app do início ao fim no `localhost:5173` sem erros.
+
+---
+
+## Fase 1: Deploy Funcional na Vercel 🌐
+
+> **Objetivo:** MVP online acessível publicamente
 > **Duração:** 1-2 dias
 
-- [x] **0.1** Adicionar PostgreSQL no `.devcontainer/compose.yaml` para desenvolvimento
-- [x] **0.2** Criar estrutura de variáveis de ambiente
-- [x] **0.3** Documentar setup no README
+- [ ] **1.1** Verificar build de produção (`npm run build`)
+- [ ] **1.2** Configurar variáveis de ambiente na Vercel (API Gemini)
+- [ ] **1.3** Deploy e testar no celular
+- [ ] **1.4** Ajustar responsividade se necessário
 
-**Critério de sucesso:** `npm run dev` funciona dentro do container
+**Critério de sucesso:** Acessar a URL da Vercel no celular e completar uma compra.
+
+> [!NOTE]
+> Nesta fase os dados ficam apenas no navegador do usuário.
+> Se ele limpar o cache, perde tudo. Isso é **aceitável temporariamente**.
 
 ---
 
-## Fase 1: Backend com Supabase 🔐
+## Fase 2: PostgreSQL (Local + Produção) 🐘
 
-> **Objetivo:** Autenticação e banco de dados funcionais
+> **Objetivo:** Dados persistidos em banco real, com ambientes separados
 > **Duração:** 1 semana
 
-- [ ] **1.1** Criar projeto no Supabase (gratuito)
-- [ ] **1.2** Criar tabelas: `produtos`, `precos`, `compras`
-- [ ] **1.3** Configurar Row Level Security (RLS)
-- [ ] **1.4** Integrar Supabase SDK no React
-- [ ] **1.5** Implementar tela de login com Google
-- [ ] **1.6** Proteger rotas para usuários logados
+### Configuração de Ambiente
 
-**Critério de sucesso:** Fazer login e ver email no dashboard
+- [ ] **2.1** PostgreSQL local via Docker Compose (já existe no devcontainer)
+- [ ] **2.2** PostgreSQL produção (Supabase Database ou Neon.tech)
+- [ ] **2.3** Variáveis de ambiente separadas (`DATABASE_URL_DEV`, `DATABASE_URL_PROD`)
+
+### Migração dos Repositórios
+
+- [ ] **2.4** Implementar `RepositorioProdutosPostgres`
+- [ ] **2.5** Implementar `RepositorioCarrinhoPostgres`
+- [ ] **2.6** Criar script de migração de dados (localStorage → Postgres)
+- [ ] **2.7** Switch automático baseado em ambiente
+
+### Validação
+
+- [ ] **2.8** Testar localmente com banco Postgres
+- [ ] **2.9** Deploy na Vercel conectando ao banco de produção
+- [ ] **2.10** Verificar dados persistindo entre dispositivos
+
+**Critério de sucesso:** Adicionar produto no celular, ver no PC.
 
 ---
 
-## Fase 2: Migração de Dados 💾
+## Fase 3: Autenticação e Segurança 🔐
 
-> **Objetivo:** Dados persistidos na nuvem
+> **Objetivo:** Usuários identificados, dados isolados por conta
 > **Duração:** 1 semana
 
-- [ ] **2.1** Criar hooks: `useProdutos`, `useCarrinho`, `useCompras`
-- [ ] **2.2** Migrar catálogo de localStorage → Supabase
-- [ ] **2.3** Migrar carrinho de localStorage → Supabase
-- [ ] **2.4** Implementar loading states e error handling
-- [ ] **2.5** Testar em dois dispositivos diferentes
+- [ ] **3.1** Configurar Supabase Auth
+- [ ] **3.2** Tela de login (Google/Email)
+- [ ] **3.3** Rotas protegidas
+- [ ] **3.4** Row Level Security (RLS) no banco
+- [ ] **3.5** Associar produtos e carrinho ao `user_id`
 
-**Critério de sucesso:** Mesmo carrinho aparece no celular e no PC
-
----
-
-## Fase 3: Features Core 📦
-
-> **Objetivo:** Scanner real e histórico
-> **Duração:** 1-2 semanas
-
-- [ ] **3.1** Integrar `html5-qrcode` para scanner real
-- [ ] **3.2** Testar scanner em dispositivos móveis
-- [ ] **3.3** Finalizar compra e salvar no histórico
-- [ ] **3.4** Tela de histórico de compras
-- [ ] **3.5** Editar/excluir produtos do catálogo
-- [ ] **3.6** Pesquisa de produtos por nome
-
-**Critério de sucesso:** Escanear produto real e finalizar compra
+**Critério de sucesso:** Dois usuários diferentes têm carrinhos isolados.
 
 ---
 
-## Fase 4: PWA e Deploy 🚀
+## Fase 4: Features Avançadas 🚀
 
-> **Objetivo:** App instalável e online
-> **Duração:** 3-5 dias
+> **Objetivo:** Experiência completa de app
+> **Duração:** 2 semanas
 
-- [ ] **4.1** Configurar `vite-plugin-pwa`
-- [ ] **4.2** Criar manifest.json com ícones
-- [ ] **4.3** Implementar Service Worker básico
-- [ ] **4.4** Deploy no Vercel ou Netlify
-- [ ] **4.5** Testar instalação no celular
-
-**Critério de sucesso:** Instalar app na home screen e usar offline
+- [ ] **4.1** Scanner real com `html5-qrcode`
+- [ ] **4.2** Histórico de compras
+- [ ] **4.3** PWA (instalável, offline básico)
+- [ ] **4.4** Pesquisa de produtos
+- [ ] **4.5** Editar/Excluir produtos do catálogo
 
 ---
 
@@ -130,5 +146,5 @@ Aplicativo web (PWA) para controle de gastos em compras de supermercado, com sca
 
 - [ ] Configurar ESLint + Prettier
 - [ ] Adicionar testes com Vitest
-- [ ] Remover arquivos desnecessários (python.md)
-- [ ] Otimizar imagens e bundle size
+- [ ] Remover arquivos desnecessários
+- [ ] Otimizar bundle size
