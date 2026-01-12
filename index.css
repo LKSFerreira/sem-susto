@@ -1,0 +1,21 @@
+/* Importa Font Awesome do pacote npm instalado localmente */
+/* IMPORTANTE: @import deve vir ANTES de qualquer outra regra CSS */
+@import '@fortawesome/fontawesome-free/css/all.min.css';
+
+/* Tailwind v4 - Nova sintaxe de importação */
+@import 'tailwindcss';
+
+/* Configuração de tema customizado para Tailwind v4 */
+@theme {
+  /* Cores customizadas do projeto */
+  --color-verde-50: #f0fdf4;
+  --color-verde-100: #dcfce7;
+  --color-verde-500: #22c55e;
+  --color-verde-600: #16a34a;
+  --color-verde-700: #15803d;
+}
+
+/* Evitar o pull-to-refresh no mobile para sensação de app nativo */
+body {
+  overscroll-behavior-y: contain;
+}
