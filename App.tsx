@@ -9,6 +9,7 @@ import { ModalDoacao } from './components/ModalDoacao';
 import { ModalConfirmacao } from './components/ModalConfirmacao';
 import { ModalTutorial, useTutorialPrimeiroAcesso } from './components/ModalTutorial';
 import { useRepositorios } from './contextos/ContextoRepositorios';
+import { buscarProdutoCosmos } from './services/cosmos';
 
 export default function App() {
   // --- Acesso aos repositórios via contexto ---
@@ -29,6 +30,7 @@ export default function App() {
   
   // Estado para fluxo de cadastro/adição
   const [codigoLido, setCodigoLido] = useState<string | null>(null);
+  const [dadosPrePreenchidos, setDadosPrePreenchidos] = useState<Partial<Produto> | null>(null);
   
   const [mostrarDoacao, setMostrarDoacao] = useState(false);
   const [mostrarConfirmacaoEsvaziar, setMostrarConfirmacaoEsvaziar] = useState(false);
@@ -49,7 +51,7 @@ export default function App() {
         const listaProdutos = await repositorioProdutos.listarTodos();
         const catalogoCarregado: Record<string, Produto> = {};
         listaProdutos.forEach(produto => {
-          catalogoCarregado[produto.codigo_barras] = produto;
+          catalogoCarregado[produto.gtin] = produto;
         });
         setCatalogo(catalogoCarregado);
 
@@ -70,28 +72,10 @@ export default function App() {
   // --- Lógica de Negócio ---
 
   const calcularTotal = useMemo(() => {
-    return carrinho.reduce((acc, item) => acc + (item.preco_unitario * item.quantidade), 0);
+    return carrinho.reduce((acc, item) => acc + (item.price * item.quantity), 0);
   }, [carrinho]);
 
-  /**
-   * Callback quando um código de barras é lido.
-   * 
-   * Se o produto já existe no catálogo, adiciona direto ao carrinho.
-   * Se não existe, abre o formulário de cadastro.
-   */
-  const aoLerCodigo = useCallback((codigo: string) => {
-    setCodigoLido(codigo);
-    
-    if (catalogo[codigo]) {
-      // Produto já existe, adicionar ao carrinho
-      adicionarAoCarrinho(catalogo[codigo]);
-      setTelaAtual('DASHBOARD');
-      setCodigoLido(null);
-    } else {
-      // Produto novo, ir para cadastro
-      setTelaAtual('CADASTRO');
-    }
-  }, [catalogo]);
+
 
   /**
    * Adiciona um produto ao carrinho.
@@ -102,16 +86,16 @@ export default function App() {
   const adicionarAoCarrinho = useCallback(async (produto: Produto) => {
     const novoItem: ItemCarrinho = {
       ...produto,
-      quantidade: 1,
-      id_unico: Date.now().toString()
+      quantity: 1,
+      uuid: Date.now().toString()
     };
     
     // Atualiza estado local primeiro (UI responsiva)
     setCarrinho(prev => {
-      const index = prev.findIndex(item => item.codigo_barras === produto.codigo_barras);
+      const index = prev.findIndex(item => item.gtin === produto.gtin);
       if (index >= 0) {
         const novoCarrinho = [...prev];
-        novoCarrinho[index].quantidade += 1;
+        novoCarrinho[index].quantity += 1;
         return novoCarrinho;
       }
       return [...prev, novoItem];
@@ -130,7 +114,7 @@ export default function App() {
    */
   const salvarProdutoNoCatalogo = useCallback(async (produto: Produto) => {
     // Atualiza estado local
-    setCatalogo(prev => ({ ...prev, [produto.codigo_barras]: produto }));
+    setCatalogo(prev => ({ ...prev, [produto.gtin]: produto }));
     
     // Persiste no repositório
     try {
@@ -147,20 +131,50 @@ export default function App() {
   }, [repositorioProdutos, adicionarAoCarrinho]);
 
   /**
+   * Callback quando um código de barras é lido.
+   * 
+   * Se o produto já existe no catálogo, adiciona direto ao carrinho.
+   * Se não existe, abre o formulário de cadastro.
+   */
+  const aoLerCodigo = useCallback(async (gtin: string) => {
+    setCodigoLido(gtin);
+    setDadosPrePreenchidos(null);
+    
+    // 1. Verifica cache local
+    if (catalogo[gtin]) {
+      adicionarAoCarrinho(catalogo[gtin]);
+      setTelaAtual('DASHBOARD');
+      setCodigoLido(null);
+      return;
+    }
+    
+    // 2. Consulta API Cosmos (Fallback)
+    // Mostra loading? Por enquanto não para ser fluido
+    const produtoCosmos = await buscarProdutoCosmos(gtin);
+    
+    if (produtoCosmos) {
+      setDadosPrePreenchidos(produtoCosmos);
+    }
+
+    // 3. Abre formulário (vazio ou preenchido)
+    setTelaAtual('CADASTRO');
+  }, [catalogo, adicionarAoCarrinho]);
+
+  /**
    * Remove um item do carrinho.
    */
-  const removerItem = useCallback(async (codigoBarras: string) => {
+  const removerItem = useCallback(async (gtin: string) => {
     // Feedback tátil
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
       navigator.vibrate(50);
     }
     
     // Atualiza estado local
-    setCarrinho(prev => prev.filter(item => item.codigo_barras !== codigoBarras));
+    setCarrinho(prev => prev.filter(item => item.gtin !== gtin));
     
     // Persiste no repositório
     try {
-      await repositorioCarrinho.removerItem(codigoBarras);
+      await repositorioCarrinho.removerItem(gtin);
     } catch (erro) {
       console.error('Erro ao remover item:', erro);
     }
@@ -171,17 +185,17 @@ export default function App() {
    * 
    * Se a quantidade chegar a zero, remove o item.
    */
-  const alterarQuantidade = useCallback(async (codigoBarras: string, delta: number) => {
+  const alterarQuantidade = useCallback(async (gtin: string, delta: number) => {
     let novaQuantidade = 0;
     
     // Atualiza estado local
     setCarrinho(prev => {
       return prev.reduce((acc, item) => {
-        if (item.codigo_barras === codigoBarras) {
-          novaQuantidade = item.quantidade + delta;
+        if (item.gtin === gtin) {
+          novaQuantidade = item.quantity + delta;
           
           if (novaQuantidade > 0) {
-            acc.push({ ...item, quantidade: novaQuantidade });
+            acc.push({ ...item, quantity: novaQuantidade });
           } else {
             // Vibra ao remover
             if (typeof navigator !== 'undefined' && navigator.vibrate) {
@@ -198,22 +212,14 @@ export default function App() {
     // Persiste no repositório
     try {
       if (novaQuantidade > 0) {
-        await repositorioCarrinho.atualizarQuantidade(codigoBarras, novaQuantidade);
+        await repositorioCarrinho.atualizarQuantidade(gtin, novaQuantidade);
       } else {
-        await repositorioCarrinho.removerItem(codigoBarras);
+        await repositorioCarrinho.removerItem(gtin);
       }
     } catch (erro) {
       console.error('Erro ao alterar quantidade:', erro);
     }
   }, [repositorioCarrinho]);
-
-  /**
-   * Abre modal de confirmação para finalizar compra.
-   */
-  const solicitarFinalizacao = useCallback(() => {
-    if (carrinho.length === 0) return;
-    setMostrarConfirmacaoFinalizar(true);
-  }, [carrinho.length]);
 
   /**
    * Executa a finalização da compra após confirmação do usuário.
@@ -226,7 +232,7 @@ export default function App() {
       const novaCompra = {
         id: crypto.randomUUID(),
         data: new Date().toISOString(),
-        itens: [...carrinho],
+        items: [...carrinho],
         total: calcularTotal
       };
 
@@ -236,20 +242,24 @@ export default function App() {
       // 3. Limpa o carrinho
       await repositorioCarrinho.limpar();
       setCarrinho([]);
-      
-      // 4. Feedback tátil
-      if (typeof navigator !== 'undefined' && navigator.vibrate) {
-        navigator.vibrate([100, 50, 100]);
-      }
 
-      // 5. Abre modal de doação como agradecimento
-      setMostrarDoacao(true);
-
+      // 4. Feedback e Redirecionamento
+      setMostrarDoacao(true); // Sugere doação após "compra" 
     } catch (erro) {
       console.error('Erro ao finalizar compra:', erro);
-      // Erro silencioso - o usuário já fechou o modal
     }
   }, [carrinho, calcularTotal, repositorioHistorico, repositorioCarrinho]);
+
+  /**
+   * Abre modal de confirmação para finalizar compra.
+   */
+  const solicitarFinalizacao = useCallback(() => {
+    if (carrinho.length === 0) return;
+    // MODAL DESABILITADO (Pedido UX): Finaliza direto
+    // setMostrarConfirmacaoFinalizar(true);
+    executarFinalizacao();
+  }, [carrinho.length, executarFinalizacao]);
+
 
   /**
    * Abre modal de confirmação para esvaziar carrinho.
@@ -353,13 +363,13 @@ export default function App() {
         ) : (
           <ul className="space-y-3">
             {carrinho.map((item) => (
-              <li key={item.codigo_barras} className="bg-white p-3 rounded-lg shadow-sm border border-gray-100 flex gap-3 animate-fade-in relative group">
+              <li key={item.gtin} className="bg-white p-3 rounded-lg shadow-sm border border-gray-100 flex gap-3 animate-fade-in relative group">
                 
                 {/* Imagem */}
                 <div className="w-20 h-20 flex-shrink-0 bg-gray-100 rounded overflow-hidden flex items-center justify-center">
                     <img 
-                      src={item.foto_base64 || IMAGEM_PADRAO} 
-                      alt={item.nome} 
+                      src={item.thumbnail || IMAGEM_PADRAO} 
+                      alt={item.description} 
                       className="max-w-full max-h-full object-contain"
                     />
                   </div>
@@ -368,10 +378,10 @@ export default function App() {
                 <div className="flex-1 min-w-0 flex flex-col justify-between">
                   <div>
                     <h3 className="font-semibold text-gray-800 truncate">
-                      {item.nome}
+                      {item.description}
                     </h3>
                     <p className="text-xs text-gray-500 truncate">
-                      {item.marca} • {item.tamanho_massa}
+                      {item.brand} • {item.size}
                     </p>
                   </div>
                   
@@ -380,15 +390,15 @@ export default function App() {
                     <div className="flex items-center gap-1 bg-gray-50 rounded p-1 border border-gray-100">
                       {/* Botão Menos / Lixeira */}
                       <button 
-                        onClick={() => alterarQuantidade(item.codigo_barras, -1)}
+                        onClick={() => alterarQuantidade(item.gtin, -1)}
                         className={`w-8 h-8 flex items-center justify-center rounded transition-colors ${
-                          item.quantidade === 1 
+                          item.quantity === 1 
                             ? 'text-red-500 hover:bg-red-50' 
                             : 'text-verde-600 hover:bg-verde-50'
                         }`}
-                        title={item.quantidade === 1 ? "Remover" : "Diminuir"}
+                        title={item.quantity === 1 ? "Remover" : "Diminuir"}
                       >
-                        {item.quantidade === 1 ? (
+                        {item.quantity === 1 ? (
                           <i className="fas fa-trash-alt text-xs"></i>
                         ) : (
                           <i className="fas fa-minus text-xs"></i>
@@ -396,11 +406,11 @@ export default function App() {
                       </button>
                       
                       <span className="text-sm font-bold w-6 text-center text-gray-700 select-none">
-                        {item.quantidade}
+                        {item.quantity}
                       </span>
                       
                       <button 
-                         onClick={() => alterarQuantidade(item.codigo_barras, 1)}
+                         onClick={() => alterarQuantidade(item.gtin, 1)}
                          className="w-8 h-8 flex items-center justify-center text-verde-600 hover:bg-verde-50 rounded transition-colors"
                       >
                         <i className="fas fa-plus text-xs"></i>
@@ -409,10 +419,10 @@ export default function App() {
                     
                     <div className="text-right">
                       <div className="text-xs text-gray-400 font-mono">
-                        {item.quantidade}x {formatarMoeda(item.preco_unitario)}
+                        {item.quantity}x {formatarMoeda(item.price)}
                       </div>
                       <div className="font-bold text-gray-900 font-mono text-lg">
-                        {formatarMoeda(item.preco_unitario * item.quantidade)}
+                        {formatarMoeda(item.price * item.quantity)}
                       </div>
                     </div>
                   </div>
@@ -479,13 +489,15 @@ export default function App() {
       {/* Formulário de Produto Modal */}
       {telaAtual === 'CADASTRO' && codigoLido && (
         <FormularioProduto 
-          codigoInicial={codigoLido}
+          gtinInicial={codigoLido}
           aoSalvar={salvarProdutoNoCatalogo}
           aoCancelar={() => {
             setTelaAtual('DASHBOARD');
             setCodigoLido(null);
+            setDadosPrePreenchidos(null);
           }}
           produtoExistente={catalogo[codigoLido] || null}
+          dadosPrePreenchidos={dadosPrePreenchidos}
         />
       )}
 

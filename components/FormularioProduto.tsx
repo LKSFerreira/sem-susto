@@ -1,65 +1,110 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Produto } from '../types';
 import { REGEX_UNIDADE } from '../constants';
-import { comprimirImagem, obterImagemRecortada } from '../services/utilitarios';
+import { comprimirImagem } from '../services/utilitarios';
 import { extrairDadosDoRotulo } from '../services/ia';
 import { ModalRecorte } from './ModalRecorte';
-import { Area } from 'react-easy-crop/types';
 
 interface PropsFormulario {
-  codigoInicial: string;
+  gtinInicial: string;
   aoSalvar: (produto: Produto) => void;
   aoCancelar: () => void;
   produtoExistente?: Produto | null;
+  dadosPrePreenchidos?: Partial<Produto> | null;
 }
 
 export const FormularioProduto: React.FC<PropsFormulario> = ({ 
-  codigoInicial, 
+  gtinInicial, 
   aoSalvar, 
   aoCancelar,
-  produtoExistente 
+  produtoExistente,
+  dadosPrePreenchidos
 }) => {
-  // Estados do formulário
-  const [nome, setNome] = useState('');
-  const [marca, setMarca] = useState('');
-  const [tamanho, setTamanho] = useState('');
-  const [preco, setPreco] = useState('');
-  const [foto, setFoto] = useState<string | undefined>(undefined);
+  const [description, setDescription] = useState('');
+  const [brand, setBrand] = useState('');
+  const [size, setSize] = useState('');
+  const [priceInput, setPriceInput] = useState('');
+  const [thumbnail, setThumbnail] = useState<string | undefined>(undefined);
+  
   const [erro, setErro] = useState<string | null>(null);
   const [campoComErro, setCampoComErro] = useState<string | null>(null);
   
-  // Refs para foco automático em campos inválidos
-  const refNome = useRef<HTMLInputElement>(null);
-  const refTamanho = useRef<HTMLInputElement>(null);
-  const refPreco = useRef<HTMLInputElement>(null);
+  // Controle de Foco Único
+  const [focoInicialFeito, setFocoInicialFeito] = useState(false);
   
-  // Estado para recorte
+  const refDescription = useRef<HTMLInputElement>(null);
+  const refBrand = useRef<HTMLInputElement>(null);
+  const refSize = useRef<HTMLInputElement>(null);
+  const refPrice = useRef<HTMLInputElement>(null);
+  
   const [imagemParaRecorte, setImagemParaRecorte] = useState<string | null>(null);
   const [mostraRecorte, setMostraRecorte] = useState(false);
-  
-  // Estados de processamento
   const [analisandoIA, setAnalisandoIA] = useState(false);
 
-  // Preencher formulário se for edição
   useEffect(() => {
     if (produtoExistente) {
-      setNome(produtoExistente.nome);
-      setMarca(produtoExistente.marca);
-      setTamanho(produtoExistente.tamanho_massa);
-      setPreco(produtoExistente.preco_unitario.toLocaleString('pt-BR', { minimumFractionDigits: 2 }));
-      setFoto(produtoExistente.foto_base64);
+      setDescription(produtoExistente.description);
+      setBrand(produtoExistente.brand);
+      setSize(produtoExistente.size);
+      setPriceInput(produtoExistente.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 }));
+      setThumbnail(produtoExistente.thumbnail);
+    } else if (dadosPrePreenchidos) {
+      if (dadosPrePreenchidos.description) setDescription(dadosPrePreenchidos.description);
+      if (dadosPrePreenchidos.brand) setBrand(dadosPrePreenchidos.brand);
+      if (dadosPrePreenchidos.size) setSize(dadosPrePreenchidos.size);
+      
+      if (dadosPrePreenchidos.price && dadosPrePreenchidos.price > 0) {
+        setPriceInput(dadosPrePreenchidos.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 }));
+      } else {
+        setPriceInput('');
+      }
+      
+      if (dadosPrePreenchidos.thumbnail) setThumbnail(dadosPrePreenchidos.thumbnail);
     }
-  }, [produtoExistente]);
+    
+    // Reseta foco ao abrir novo produto
+    setFocoInicialFeito(false);
+  }, [produtoExistente, dadosPrePreenchidos, gtinInicial]);
 
-  // 1. Ao selecionar arquivo, abre modal de recorte
+  // Lógica de Foco Inteligente (Executa apenas uma vez quando os dados estabilizam)
+  useEffect(() => {
+    if (focoInicialFeito || analisandoIA) return;
+
+    // Se temos pelo menos algum dado ou é um formulário vazio pronto
+    const timer = setTimeout(() => {
+      let focou = false;
+
+      // Prioridade: Campos vazios
+      if (!description) {
+        refDescription.current?.focus();
+        focou = true;
+      } else if (!brand) {
+         refBrand.current?.focus();
+         focou = true;
+      } else if (!size) {
+        refSize.current?.focus();
+        focou = true;
+      } else {
+        // Se tudo preenchido, foca no preço para validação (Regra do Usuário)
+        refPrice.current?.focus();
+        setTimeout(() => refPrice.current?.select(), 50);
+        focou = true;
+      }
+      
+      if (focou) setFocoInicialFeito(true);
+    }, 600); // Delay maior para garantir animação e preenchimento
+
+    return () => clearTimeout(timer);
+  }, [description, brand, size, analisandoIA, focoInicialFeito]);
+  // Removemos priceInput das dependências para não refocar ao digitar!
+
   const lidarComSelecaoImagem = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setErro(null);
       try {
-        const imagemBase64 = await comprimirImagem(e.target.files[0], 0.9, 800); // Qualidade alta para recorte
+        const imagemBase64 = await comprimirImagem(e.target.files[0], 0.9, 800);
         setImagemParaRecorte(imagemBase64);
         setMostraRecorte(true);
-        // Reset do input para permitir selecionar a mesma foto se cancelar
         e.target.value = '';
       } catch (err) {
         setErro("Erro ao carregar imagem.");
@@ -67,28 +112,31 @@ export const FormularioProduto: React.FC<PropsFormulario> = ({
     }
   };
 
-  // 2. Ao confirmar recorte (recebe Base64 direto agora)
   const aoConfirmarRecorte = async (fotoRecortadaBase64: string) => {
     setMostraRecorte(false);
+    setThumbnail(fotoRecortadaBase64);
+    setImagemParaRecorte(null);
+
+    const precisaOcr = !description || !brand;
+
+    if (!precisaOcr) {
+      if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(50);
+      return;
+    }
+
     setAnalisandoIA(true);
-
+    setFocoInicialFeito(false); // Permite refocar após IA preencher
     try {
-      // Define a foto final (já recortada)
-      setFoto(fotoRecortadaBase64);
-      setImagemParaRecorte(null);
-
-      // Envia para IA (Groq/Gemini)
       const dadosExtraidos = await extrairDadosDoRotulo(fotoRecortadaBase64);
-      
       if (dadosExtraidos) {
-        if (dadosExtraidos.nome) setNome(dadosExtraidos.nome);
-        if (dadosExtraidos.marca) setMarca(dadosExtraidos.marca);
-        if (dadosExtraidos.tamanho) setTamanho(dadosExtraidos.tamanho);
-        if (navigator?.vibrate) navigator.vibrate([50, 50, 50]);
+        if (dadosExtraidos.description) setDescription(dadosExtraidos.description);
+        if (dadosExtraidos.brand) setBrand(dadosExtraidos.brand);
+        if (dadosExtraidos.size) setSize(dadosExtraidos.size);
+        if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate([50, 50, 50]);
       }
     } catch (err: any) {
-      console.error("Erro no processamento:", err);
-      setErro(`Erro IA: ${err.message || String(err)}`);
+      console.error("Erro no processamento IA:", err);
+      setErro(`Não foi possível ler o rótulo automaticamente, mas a foto foi salva.`);
     } finally {
       setAnalisandoIA(false);
     }
@@ -102,7 +150,7 @@ export const FormularioProduto: React.FC<PropsFormulario> = ({
   const removerFoto = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    setFoto(undefined);
+    setThumbnail(undefined);
   };
 
   const lidarMudancaPreco = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -110,7 +158,7 @@ export const FormularioProduto: React.FC<PropsFormulario> = ({
     const apenasDigitos = valorDigitado.replace(/\D/g, "");
 
     if (!apenasDigitos) {
-      setPreco("");
+      setPriceInput("");
       return;
     }
 
@@ -120,7 +168,7 @@ export const FormularioProduto: React.FC<PropsFormulario> = ({
       maximumFractionDigits: 2
     });
 
-    setPreco(valorFormatado);
+    setPriceInput(valorFormatado);
   };
 
   const validarESalvar = (e: React.FormEvent) => {
@@ -128,41 +176,42 @@ export const FormularioProduto: React.FC<PropsFormulario> = ({
     setErro(null);
     setCampoComErro(null);
 
-    // Validação em ordem lógica dos campos (de cima para baixo)
-    // 1. Nome (obrigatório)
-    if (!nome.trim()) {
+    if (!thumbnail) {
+      setErro('A foto do produto é obrigatória.');
+      return;
+    }
+
+    if (!description.trim()) {
       setErro('O nome do produto é obrigatório.');
-      setCampoComErro('nome');
-      refNome.current?.focus();
+      setCampoComErro('description');
+      refDescription.current?.focus();
       return;
     }
 
-    // 2. Tamanho (formato válido se preenchido)
-    if (tamanho && !REGEX_UNIDADE.test(tamanho)) {
+    if (size && !REGEX_UNIDADE.test(size)) {
       setErro('Tamanho inválido (Ex: 1L, 500g).');
-      setCampoComErro('tamanho');
-      refTamanho.current?.focus();
+      setCampoComErro('size');
+      refSize.current?.focus();
       return;
     }
 
-    // 3. Preço (obrigatório e > 0)
-    const precoLimpo = preco.replace(/\./g, '').replace(',', '.');
+    const precoLimpo = priceInput.replace(/\./g, '').replace(',', '.');
     const precoNumerico = parseFloat(precoLimpo);
 
     if (isNaN(precoNumerico) || precoNumerico <= 0) {
       setErro('O preço é obrigatório.');
-      setCampoComErro('preco');
-      refPreco.current?.focus();
+      setCampoComErro('price');
+      refPrice.current?.focus();
       return;
     }
 
     const novoProduto: Produto = {
-      codigo_barras: codigoInicial,
-      nome,
-      marca: marca || 'Genérica',
-      tamanho_massa: tamanho || '-',
-      preco_unitario: precoNumerico,
-      foto_base64: foto
+      gtin: gtinInicial,
+      description,
+      brand: brand || 'Genérica',
+      size: size || '-',
+      price: precoNumerico,
+      thumbnail
     };
 
     aoSalvar(novoProduto);
@@ -170,6 +219,7 @@ export const FormularioProduto: React.FC<PropsFormulario> = ({
 
   const classeInput = "w-full p-2 bg-gray-700 border border-gray-600 rounded-lg text-white font-bold placeholder-gray-400 focus:ring-2 focus:ring-verde-500 outline-none transition-colors";
   const classeLabel = "block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1";
+  const origemCosmos = !!dadosPrePreenchidos && !produtoExistente;
 
   return (
     <div className="fixed inset-0 bg-white z-50 flex flex-col h-full overflow-hidden">
@@ -183,7 +233,6 @@ export const FormularioProduto: React.FC<PropsFormulario> = ({
       </div>
 
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-5 flex flex-col [&::-webkit-scrollbar]:hidden">
-        {/* ... restante do form ... */}
         {mostraRecorte && imagemParaRecorte && (
           <ModalRecorte
             imagem={imagemParaRecorte}
@@ -192,126 +241,104 @@ export const FormularioProduto: React.FC<PropsFormulario> = ({
           />
         )}
         <style>{`
-          @keyframes shimmer {
-            0% { transform: translateX(-150%) skewX(-15deg); }
-            40% { transform: translateX(150%) skewX(-15deg); }
-            100% { transform: translateX(150%) skewX(-15deg); }
-          }
-          .animate-shimmer-btn {
-            animation: shimmer 2.5s infinite;
-          }
-           @keyframes slide-up {
-            from { transform: translateY(100%); }
-            to { transform: translateY(0); }
-          }
-          .animate-slide-up {
-            animation: slide-up 0.3s ease-out;
+          @keyframes border-spin {
+            100% { transform: rotate(360deg); }
           }
         `}</style>
+        
         <form id="form-produto" onSubmit={validarESalvar} className="flex flex-col gap-3 h-full">
-          {!foto && !produtoExistente ? (
+          {/* FOTO */}
+          <div className={`transition-all duration-300 ${!thumbnail ? 'ring-2 ring-red-100 rounded-xl p-1 bg-red-50' : ''}`}>
+             {!thumbnail ? (
             <div className="flex gap-3 items-stretch h-36">
-              <div className="w-32 shrink-0 relative rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 flex flex-col items-center justify-center text-gray-400 group hover:bg-gray-100 transition-colors cursor-pointer">
+              <div className="w-32 shrink-0 relative rounded-xl border-2 border-dashed border-gray-300 bg-white flex flex-col items-center justify-center text-gray-400 group cursor-pointer">
                 {analisandoIA ? (
-                   <div className="flex flex-col items-center animate-pulse">
-                     <i className="fas fa-spinner fa-spin text-2xl mb-1"></i>
-                     <span className="text-[10px] font-bold uppercase">Lendo...</span>
-                   </div>
+                   <div className="flex flex-col items-center animate-pulse"><i className="fas fa-spinner fa-spin text-2xl mb-1"></i><span className="text-[10px] font-bold uppercase">Lendo...</span></div>
                 ) : (
-                  <>
-                    <i className="fas fa-images text-3xl mb-2 opacity-50 group-hover:opacity-70 transition-opacity"></i>
-                    <span className="text-[10px] font-bold uppercase tracking-wide text-gray-500">Galeria</span>
-                  </>
+                  <><i className="fas fa-images text-3xl mb-2 opacity-50"></i><span className="text-[10px] font-bold uppercase tracking-wide text-gray-500">Galeria</span></>
                 )}
                 <input type="file" accept="image/*" onChange={lidarComSelecaoImagem} disabled={analisandoIA} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
               </div>
-
               <div className="flex-1 bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-3 flex flex-col justify-between shadow-sm relative overflow-hidden">
-                <div className="absolute top-0 right-0 -mr-2 -mt-2 w-12 h-12 bg-blue-500/10 rounded-full blur-xl"></div>
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <div className="bg-blue-100 p-1 rounded-full text-blue-600"><i className="fas fa-magic text-xs"></i></div>
-                    <span className="font-bold text-blue-800 text-xs uppercase">IA Integrada</span>
+                    <div className="bg-blue-100 p-1 rounded-full text-blue-600"><i className="fas fa-camera text-xs"></i></div>
+                    <span className="font-bold text-blue-800 text-xs uppercase">Foto Obrigatória</span>
                   </div>
-                  <p className="text-[11px] text-blue-700 leading-tight">Tire foto frontal do rótulo. Nós preenchemos os dados para você.</p>
+                  <p className="text-[11px] text-blue-700 leading-tight">{origemCosmos ? 'Confirmar visual do produto.' : 'Tire foto para preenchimento IA.'}</p>
                 </div>
-                <label className={`w-full flex items-center justify-center gap-2 py-3 rounded-lg font-bold text-xs cursor-pointer transition-all select-none overflow-hidden relative group ${analisandoIA ? 'bg-blue-200 text-blue-800 cursor-wait' : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-[1.02] active:scale-95'}`}>
-                   {analisandoIA ? (
-                     <i className="fas fa-spinner fa-spin"></i>
-                   ) : (
-                     <>
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent w-1/2 h-full animate-shimmer-btn"></div>
-                        <i className="fas fa-camera text-sm relative z-10"></i>
-                     </>
+                
+                {/* Botão com Borda Rainbow Animada Corrigida */}
+                <label className={`w-full relative group cursor-pointer rounded-lg overflow-hidden p-[3px] transition-all active:scale-95 ${analisandoIA ? 'cursor-wait opacity-80' : 'shadow-lg'}`}>
+                   {/* Gradient Layer */}
+                   {!analisandoIA && (
+                     <div 
+                       className="absolute inset-[-500%] bg-[conic-gradient(from_0deg,#ff0000,#ff8800,#ffff00,#00ff00,#0000ff,#8800ff,#ff0000)]"
+                       style={{ animation: 'border-spin 3s linear infinite' }}
+                     ></div>
                    )}
-                   <span className="relative z-10">{analisandoIA ? 'Processando...' : 'Usar Câmera'}</span>
+                   
+                   {/* Content Layer */}
+                   <div className="relative w-full h-full rounded-[5px] flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-blue-700 to-indigo-700 text-white z-10">
+                      {analisandoIA ? (
+                        <i className="fas fa-spinner fa-spin"></i>
+                      ) : (
+                        <i className="fas fa-camera text-sm"></i>
+                      )}
+                      <span className="font-bold text-xs uppercase tracking-wide">
+                        {analisandoIA ? 'Processando...' : 'AUTO PREENCHER'}
+                      </span>
+                   </div>
+                   
                    <input type="file" accept="image/*" capture="environment" onChange={lidarComSelecaoImagem} disabled={analisandoIA} className="hidden" />
                 </label>
               </div>
             </div>
-          ) : (
+             ) : (
             <div className="flex flex-col items-center shrink-0 animate-fade-in">
               <div className="relative group">
-                <div className={`w-32 h-32 rounded-xl overflow-hidden border-2 border-dashed flex items-center justify-center relative transition-colors ${foto ? 'border-verde-500 bg-white shadow-sm' : 'border-gray-300 bg-gray-50 hover:bg-gray-100'}`}>
-                  {foto ? (
-                    <>
-                      <img src={foto} alt="Preview" className="w-full h-full object-contain p-1" />
-                      <button onClick={removerFoto} className="absolute top-1 right-1 bg-red-500 text-white w-7 h-7 rounded-full shadow-lg flex items-center justify-center hover:bg-red-600 active:scale-95 transition-transform z-20" title="Remover foto">
-                        <i className="fas fa-trash-alt text-xs"></i>
-                      </button>
-                    </>
-                  ) : (
-                    <div className="flex flex-col items-center text-gray-400">
-                      <i className="fas fa-camera text-3xl mb-1 opacity-40"></i>
-                      <span className="text-[10px] font-semibold text-center leading-tight">Adicionar<br/>Foto</span>
-                    </div>
-                  )}
+                <div className={`w-32 h-32 rounded-xl overflow-hidden border-2 border-dashed flex items-center justify-center relative transition-colors ${thumbnail ? 'border-verde-500 bg-white shadow-sm' : 'border-gray-300'}`}>
+                  <img src={thumbnail} alt="Preview" className="w-full h-full object-contain p-1" />
+                  <button onClick={removerFoto} className="absolute top-1 right-1 bg-red-500 text-white w-7 h-7 rounded-full shadow-lg flex items-center justify-center hover:bg-red-600 z-20"><i className="fas fa-trash-alt text-xs"></i></button>
                   <input type="file" accept="image/*" onChange={lidarComSelecaoImagem} disabled={analisandoIA} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
                 </div>
               </div>
             </div>
-          )}
+             )}
+          </div>
 
           <div className="bg-gray-100 py-2 px-3 rounded-lg text-center border border-gray-200 flex items-center justify-center gap-2 shrink-0">
-             <i className="fas fa-barcode text-gray-400"></i> 
-             <span className="font-mono font-bold text-gray-600 text-sm tracking-wider">{codigoInicial}</span>
+             <i className="fas fa-barcode text-gray-400"></i><span className="font-mono font-bold text-gray-600 text-sm tracking-wider">{gtinInicial}</span>
           </div>
 
           <div className="flex flex-col gap-3 flex-1">
             <div>
               <label className={classeLabel}>Nome do Produto</label>
-              <input ref={refNome} value={nome} onChange={e => { setNome(e.target.value); if (campoComErro === 'nome') setCampoComErro(null); }} className={`${classeInput} ${analisandoIA ? 'animate-pulse bg-gray-600' : ''} ${campoComErro === 'nome' ? 'border-red-500 ring-2 ring-red-400' : ''}`} placeholder="Ex: Leite Integral" disabled={analisandoIA} />
+              <input ref={refDescription} value={description} onChange={e => { setDescription(e.target.value); if (campoComErro === 'description') setCampoComErro(null); }} className={`${classeInput} ${analisandoIA ? 'animate-pulse bg-gray-600' : ''} ${campoComErro === 'description' ? 'border-red-500 ring-2 ring-red-400' : ''}`} placeholder="Ex: Leite Integral" disabled={analisandoIA} />
             </div>
             <div className="flex gap-3">
               <div className="flex-[3]">
                 <label className={classeLabel}>Marca</label>
-                <input value={marca} onChange={e => setMarca(e.target.value)} className={`${classeInput} ${analisandoIA ? 'animate-pulse bg-gray-600' : ''}`} placeholder="Ex: Longa Vida" disabled={analisandoIA} />
+                <input ref={refBrand} value={brand} onChange={e => setBrand(e.target.value)} className={`${classeInput} ${analisandoIA ? 'animate-pulse bg-gray-600' : ''}`} placeholder="Ex: Longa Vida" disabled={analisandoIA} />
               </div>
               <div className="flex-[2]">
                 <label className={classeLabel}>Tamanho</label>
-                <input ref={refTamanho} value={tamanho} onChange={e => { setTamanho(e.target.value); if (campoComErro === 'tamanho') setCampoComErro(null); }} className={`${classeInput} ${tamanho && !REGEX_UNIDADE.test(tamanho) ? 'border-red-400 text-red-100' : ''} ${analisandoIA ? 'animate-pulse bg-gray-600' : ''} ${campoComErro === 'tamanho' ? 'border-red-500 ring-2 ring-red-400' : ''}`} placeholder="Ex: 1L" disabled={analisandoIA} />
+                <input ref={refSize} value={size} onChange={e => { setSize(e.target.value); if (campoComErro === 'size') setCampoComErro(null); }} className={`${classeInput} ${size && !REGEX_UNIDADE.test(size) ? 'border-red-400 text-red-100' : ''} ${analisandoIA ? 'animate-pulse bg-gray-600' : ''} ${campoComErro === 'size' ? 'border-red-500 ring-2 ring-red-400' : ''}`} placeholder="Ex: 1L" disabled={analisandoIA} />
               </div>
             </div>
             <div className="bg-gray-50 p-2 rounded-lg border border-gray-200">
                <label className="block text-xs font-bold text-verde-700 uppercase tracking-wide mb-1">Preço Unitário (R$) <span className="text-red-500">*</span></label>
-               <input ref={refPreco} type="tel" inputMode="numeric" value={preco} onChange={e => { lidarMudancaPreco(e); if (campoComErro === 'preco') setCampoComErro(null); }} className={`w-full p-2 bg-white border-2 rounded-lg text-gray-900 font-bold text-2xl placeholder-gray-300 focus:outline-none shadow-sm ${campoComErro === 'preco' ? 'border-red-500 ring-2 ring-red-400' : 'border-verde-500'}`} placeholder="0,00" autoFocus={!analisandoIA && !produtoExistente} />
-              <p className="text-[10px] text-gray-500 mt-1 text-right">Digite manualmente</p>
+               <input ref={refPrice} type="tel" inputMode="decimal" value={priceInput} onFocus={(e) => e.target.select()} onChange={e => { lidarMudancaPreco(e); if (campoComErro === 'price') setCampoComErro(null); }} className={`w-full p-2 bg-white border-2 rounded-lg text-gray-900 font-bold text-2xl placeholder-gray-300 focus:outline-none shadow-sm ${campoComErro === 'price' ? 'border-red-500 ring-2 ring-red-400' : 'border-verde-500'}`} placeholder="0,00" />
+               <p className="text-[10px] text-gray-500 mt-1 text-right">Toque para selecionar tudo</p>
             </div>
           </div>
-            {erro && (
-            <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm border border-red-100 font-bold flex items-center animate-fade-in">
-              <i className="fas fa-exclamation-triangle mr-2"></i> {erro}
-            </div>
+          
+          {erro && (
+            <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm border border-red-100 font-bold flex items-center animate-fade-in"><i className="fas fa-exclamation-triangle mr-2"></i> {erro}</div>
           )}
           
           <div className="pt-4 pb-8 mt-auto">
-            <button 
-              onClick={validarESalvar} 
-              disabled={analisandoIA} 
-              className={`w-full text-white py-4 rounded-xl font-bold text-lg shadow-lg transition-all ${analisandoIA ? 'bg-gray-400 cursor-not-allowed' : 'bg-verde-600 hover:bg-verde-700 active:scale-95'}`}
-            >
-              {analisandoIA ? 'Processando...' : 'Salvar Produto'}
-            </button>
+            <button onClick={validarESalvar} disabled={analisandoIA} className={`w-full text-white py-4 rounded-xl font-bold text-lg shadow-lg transition-all ${analisandoIA ? 'bg-gray-400 cursor-not-allowed' : 'bg-verde-600 hover:bg-verde-700 active:scale-95'}`}>{analisandoIA ? 'Processando...' : 'Salvar Produto'}</button>
           </div>
         </form>
       </div>
