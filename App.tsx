@@ -7,11 +7,15 @@ import { FormularioProduto } from './components/FormularioProduto';
 import { DebugConsole } from './components/DebugConsole';
 import { ModalDoacao } from './components/ModalDoacao';
 import { ModalConfirmacao } from './components/ModalConfirmacao';
+import { ModalTutorial, useTutorialPrimeiroAcesso } from './components/ModalTutorial';
 import { useRepositorios } from './contextos/ContextoRepositorios';
 
 export default function App() {
   // --- Acesso aos repositórios via contexto ---
   const { produtos: repositorioProdutos, carrinho: repositorioCarrinho, historico: repositorioHistorico } = useRepositorios();
+
+  // --- Tutorial de primeiro acesso ---
+  const { mostrar: mostrarTutorial, fechar: fecharTutorial } = useTutorialPrimeiroAcesso();
 
   // --- Estados ---
   const [telaAtual, setTelaAtual] = useState<TelaApp>('DASHBOARD');
@@ -510,6 +514,12 @@ export default function App() {
           aoCancelar={() => setMostrarConfirmacaoFinalizar(false)}
         />
       )}
+
+      {/* Tutorial de Primeiro Acesso */}
+      {mostrarTutorial && (
+        <ModalTutorial aoFechar={fecharTutorial} />
+      )}
+
 
     </div>
   );
