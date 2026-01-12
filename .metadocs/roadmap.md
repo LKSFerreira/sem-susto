@@ -48,7 +48,7 @@
 - [x] **0.5.8** Carrinho operacional (adicionar, remover, alterar quantidade)
 - [x] **0.5.9** Cálculo de total em tempo real
 - [x] **0.5.10** In-app Debugger para mobile
-- [ ] **0.5.11** Limpar carrinho / Finalizar compra (salvar histórico local)
+- [x] **0.5.11** Limpar carrinho / Finalizar compra (salvar histórico local)
 
 ### Polimento
 
@@ -126,7 +126,7 @@
 > **Duração:** 2 semanas
 
 - [x] **4.1** Scanner real com `html5-qrcode` (Adiantado para MVP)
-- [ ] **4.2** Histórico de compras
+- [x] **4.2** Histórico de compras
 - [ ] **4.3** PWA (instalável, offline básico)
 - [ ] **4.4** Pesquisa de produtos
 - [ ] **4.5** Editar/Excluir produtos do catálogo
