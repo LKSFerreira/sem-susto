@@ -40,8 +40,20 @@ export const useLogger = create<LoggerState>((set) => ({
 }));
 
 export const logger = {
-  info: (msg: string, details?: any) => useLogger.getState().addLog('info', msg, details),
-  warn: (msg: string, details?: any) => useLogger.getState().addLog('warn', msg, details),
-  error: (msg: string, details?: any) => useLogger.getState().addLog('error', msg, details),
-  success: (msg: string, details?: any) => useLogger.getState().addLog('success', msg, details),
+  info: (msg: string, details?: any) => {
+    console.log(`ℹ️ [INFO] ${msg}`, details || '');
+    useLogger.getState().addLog('info', msg, details);
+  },
+  warn: (msg: string, details?: any) => {
+    console.warn(`⚠️ [WARN] ${msg}`, details || '');
+    useLogger.getState().addLog('warn', msg, details);
+  },
+  error: (msg: string, details?: any) => {
+    console.error(`❌ [ERROR] ${msg}`, details || '');
+    useLogger.getState().addLog('error', msg, details);
+  },
+  success: (msg: string, details?: any) => {
+    console.log(`✅ [SUCCESS] ${msg}`, details || '');
+    useLogger.getState().addLog('success', msg, details);
+  },
 };

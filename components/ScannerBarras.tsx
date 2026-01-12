@@ -95,11 +95,11 @@ export const ScannerBarras: React.FC<PropsScanner> = ({ aoLerCodigo, aoCancelar 
   const lidarComEnvioManual = (e: React.FormEvent) => {
     e.preventDefault();
     if (codigoManual.trim().length > 0) {
-      if (scannerRef.current) {
-         scannerRef.current.stop().catch(() => {}).finally(() => aoLerCodigo(codigoManual.trim()));
-      } else {
-         aoLerCodigo(codigoManual.trim());
-      }
+      // Não precisamos parar o scanner explicitamente aqui,
+      // pois o aoLerCodigo vai desmontar o componente e
+      // a função de limpeza do useEffect vai parar a câmera.
+      // Isso evita condições de corrida onde o stop() trava.
+      aoLerCodigo(codigoManual.trim());
     }
   };
 
