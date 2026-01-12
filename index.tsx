@@ -1,5 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+// Font Awesome - Importação via JS para garantir carregamento correto das fontes pelo Vite
+import '@fortawesome/fontawesome-free/css/all.min.css';
 import App from './App';
 import { ProvedorRepositorios } from './contextos/ContextoRepositorios';
 
