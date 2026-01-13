@@ -38,6 +38,7 @@ services:
     environment:
       - NODE_ENV=development
       - WATCHPACK_POLLING=true
+      - HOST_IP=${HOST_IP:-}
     depends_on:
       - database
 

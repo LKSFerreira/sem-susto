@@ -79,21 +79,22 @@ Consumidores frequentemente perdem o controle do valor total durante compras, re
 
 ```bash
 # 1. Clone o repositório
-git clone https://github.com/LKSFerreira/preco-certo.git
-cd preco-certo
+git clone https://github.com/LKSFerreira/sem-susto.git
+cd sem-susto
 
 # 2. Configure as variáveis de ambiente
 cp .env.example .env.local
 # Edite .env.local e adicione sua chave em VITE_OPENROUTER_TOKEN
 
-# 3. Suba os containers
-docker compose -f .docker/compose.yaml up -d --build
+# 3. Suba os containers (Recomendado)
+# O script detecta seu IP automaticamente para acesso via celular
+./dev.sh
 
 # 4. Acesse a aplicação
-# Abra http://localhost:5173 no navegador
+# O terminal mostrará os links de acesso (Local e Celular)
 ```
 
-O app estará disponível em `http://localhost:5173`
+O app estará disponível em `https://localhost:5173`
 
 ### Setup Local (Alternativo)
 
@@ -108,7 +109,7 @@ npm run dev
 ## 🏗 Arquitetura
 
 ```
-preco-certo/
+sem-susto/
 ├── .docker/                # Arquivos Docker Compose
 ├── .metadocs/              # Documentação de projeto
 │   └── roadmap.md          # Planejamento de features
