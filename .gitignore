@@ -24,3 +24,5 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+produtos_brasil_v1.csv
+openfoodfacts-products.jsonl.gz
