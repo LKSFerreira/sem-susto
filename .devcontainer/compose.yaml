@@ -1,0 +1,58 @@
+# =============================================================================
+# Docker Compose - Preço Certo
+# =============================================================================
+# Para desenvolver: docker compose -f .docker/compose.yaml up
+# Para parar: Ctrl+C ou docker compose down
+# =============================================================================
+
+services:
+
+  # ---------------------------------------------------------------------------
+  # DATABASE - PostgreSQL para desenvolvimento local
+  # ---------------------------------------------------------------------------
+  database:
+    image: 'postgres:16-alpine'
+    env_file:
+      - ../.env.development
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  # ---------------------------------------------------------------------------
+  # PROCESSOR - Python Worker para scripts pesados (Data Engineering)
+  # ---------------------------------------------------------------------------
+  processor:
+    image: python:3.12-alpine
+    volumes:
+      - ../:/app
+    working_dir: /app
+    # Mantém o container vivo para rodarmos comandos manuais ou roda o script direto
+    command: tail -f /dev/null
+
+  # ---------------------------------------------------------------------------
+  # APP - Node.js com Vite (Build via Dockerfile)
+  # ---------------------------------------------------------------------------
+  app:
+    build:
+      context: ../
+      dockerfile: .devcontainer/Dockerfile
+    ports:
+      - '5173:5173'
+    volumes:
+      - ../:/app
+      - /app/node_modules
+    working_dir: /app
+    stdin_open: true
+    tty: true
+    env_file:
+      - ../.env.development
+    environment:
+      - NODE_ENV=development
+      - WATCHPACK_POLLING=true
+      - HOST_IP=${HOST_IP:-}
+    depends_on:
+      - database
+
+volumes:
+  postgres-data:
