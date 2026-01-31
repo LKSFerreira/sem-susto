@@ -191,6 +191,7 @@
 - [ ] Notificações de ofertas
 - [ ] Modo escuro
 - [ ] Exportar histórico (CSV/PDF)
+- [x] Configurar página de doações com chave PIX real
 
 ---
 
