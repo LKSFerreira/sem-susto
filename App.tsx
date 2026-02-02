@@ -10,6 +10,7 @@ import { ModalConfirmacao } from './components/ModalConfirmacao';
 import { ModalTutorial, useTutorialPrimeiroAcesso } from './components/ModalTutorial';
 import { useRepositorios } from './contextos/ContextoRepositorios';
 import { buscarProdutoCosmos } from './services/cosmos';
+import { buscarProdutoOFF } from './services/openfoodfacts';
 
 export default function App() {
   // --- Acesso aos repositórios via contexto ---
@@ -32,6 +33,9 @@ export default function App() {
   const [codigoLido, setCodigoLido] = useState<string | null>(null);
   const [dadosPrePreenchidos, setDadosPrePreenchidos] = useState<Partial<Produto> | null>(null);
 
+  // Flag para diferenciar Novo Produto (soma +1) de Edição (atualiza dados)
+  const [modoEdicao, setModoEdicao] = useState(false);
+
   const [mostrarDoacao, setMostrarDoacao] = useState(false);
   const [mostrarConfirmacaoEsvaziar, setMostrarConfirmacaoEsvaziar] = useState(false);
   const [mostrarConfirmacaoFinalizar, setMostrarConfirmacaoFinalizar] = useState(false);
@@ -51,7 +55,7 @@ export default function App() {
         const listaProdutos = await repositorioProdutos.listarTodos();
         const catalogoCarregado: Record<string, Produto> = {};
         listaProdutos.forEach(produto => {
-          catalogoCarregado[produto.gtin] = produto;
+          catalogoCarregado[produto.codigo_barras] = produto;
         });
         setCatalogo(catalogoCarregado);
 
@@ -72,7 +76,7 @@ export default function App() {
   // --- Lógica de Negócio ---
 
   const calcularTotal = useMemo(() => {
-    return carrinho.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+    return carrinho.reduce((acc, item) => acc + ((item.preco_estimado || 0) * item.quantidade), 0);
   }, [carrinho]);
 
 
@@ -86,16 +90,16 @@ export default function App() {
   const adicionarAoCarrinho = useCallback(async (produto: Produto) => {
     const novoItem: ItemCarrinho = {
       ...produto,
-      quantity: 1,
+      quantidade: 1,
       uuid: Date.now().toString()
     };
 
     // Atualiza estado local primeiro (UI responsiva)
     setCarrinho(prev => {
-      const index = prev.findIndex(item => item.gtin === produto.gtin);
+      const index = prev.findIndex(item => item.codigo_barras === produto.codigo_barras);
       if (index >= 0) {
         const novoCarrinho = [...prev];
-        novoCarrinho[index].quantity += 1;
+        novoCarrinho[index].quantidade += 1;
         return novoCarrinho;
       }
       return [...prev, novoItem];
@@ -110,71 +114,123 @@ export default function App() {
   }, [repositorioCarrinho]);
 
   /**
+   * Atualiza os dados de um item no carrinho (preço, nome, foto)
+   * SEM alterar a quantidade.
+   */
+  const atualizarProdutoNoCarrinho = useCallback(async (produto: Produto) => {
+    // Atualiza estado local
+    setCarrinho(prev => {
+      const index = prev.findIndex(item => item.codigo_barras === produto.codigo_barras);
+      if (index >= 0) {
+        const novoCarrinho = [...prev];
+        // Mantém a quantidade e uuid antigos, atualiza o resto
+        novoCarrinho[index] = {
+          ...novoCarrinho[index],
+          ...produto
+        };
+        return novoCarrinho;
+      }
+      return prev;
+    });
+
+    // Como o repositório de carrinho salva a lista toda ou itens individuais,
+    // e o metodo 'adicionarItem' soma quantidade, precisamos de lógica específica.
+    // Simplificação MVP: Salva o carrinho todo novamente.
+    // Em produção ideal: repositorioCarrinho.atualizarItem(produto)
+
+    // Atualiza catálogo também
+    setCatalogo(prev => ({ ...prev, [produto.codigo_barras]: produto }));
+    await repositorioProdutos.salvar(produto);
+
+    // Pequeno hack: para garantir persistência correta no carrinho,
+    // vamos recarregar o estado atual e salvar tudo.
+    // (Melhor seria ter um método 'atualizarItem' no repositório)
+    const carrinhoAtual = await repositorioCarrinho.obterItens();
+    const index = carrinhoAtual.findIndex(i => i.codigo_barras === produto.codigo_barras);
+    if (index >= 0) {
+      carrinhoAtual[index] = { ...carrinhoAtual[index], ...produto };
+      await repositorioCarrinho.salvarTodos(carrinhoAtual);
+    }
+  }, [repositorioCarrinho, repositorioProdutos]);
+
+  /**
    * Salva um novo produto no catálogo e adiciona ao carrinho.
    */
   const salvarProdutoNoCatalogo = useCallback(async (produto: Produto) => {
-    // Atualiza estado local
-    setCatalogo(prev => ({ ...prev, [produto.gtin]: produto }));
+    // 1. Salva no Catálogo (sempre)
+    setCatalogo(prev => ({ ...prev, [produto.codigo_barras]: produto }));
 
-    // Persiste no repositório
     try {
       await repositorioProdutos.salvar(produto);
     } catch (erro) {
       console.error('Erro ao salvar produto:', erro);
     }
 
-    // Adiciona ao carrinho
-    await adicionarAoCarrinho(produto);
+    // 2. Decide: Adicionar (+1) ou Atualizar (Edição)
+    if (modoEdicao) {
+      await atualizarProdutoNoCarrinho(produto);
+    } else {
+      await adicionarAoCarrinho(produto);
+    }
 
     setTelaAtual('DASHBOARD');
     setCodigoLido(null);
-  }, [repositorioProdutos, adicionarAoCarrinho]);
+    setModoEdicao(false); // Reset
+  }, [repositorioProdutos, adicionarAoCarrinho, atualizarProdutoNoCarrinho, modoEdicao]);
 
   /**
    * Callback quando um código de barras é lido.
    * 
-   * Se o produto já existe no catálogo, adiciona direto ao carrinho.
-   * Se não existe, abre o formulário de cadastro.
+   * Ordem de Busca:
+   * 1. Catálogo Local (Offline/Cache)
+   * 2. OpenFoodFacts (Gratuita/Colaborativa)
+   * 3. API Cosmos (Comercial - Fallback)
+   * 4. Formulário Manual
    */
-  const aoLerCodigo = useCallback(async (gtin: string) => {
-    setCodigoLido(gtin);
+  const aoLerCodigo = useCallback(async (codigo_barras: string) => {
+    setCodigoLido(codigo_barras);
+    setModoEdicao(false); // Scanner sempre é "Novo" ou "Incremento"
     setDadosPrePreenchidos(null);
 
     // 1. Verifica cache local
-    if (catalogo[gtin]) {
-      adicionarAoCarrinho(catalogo[gtin]);
+    if (catalogo[codigo_barras]) {
+      adicionarAoCarrinho(catalogo[codigo_barras]);
       setTelaAtual('DASHBOARD');
       setCodigoLido(null);
       return;
     }
 
-    // 2. Consulta API Cosmos (Fallback)
-    // Mostra loading? Por enquanto não para ser fluido
-    const produtoCosmos = await buscarProdutoCosmos(gtin);
+    // 2. Consulta OpenFoodFacts (Prioridade API)
+    let produtoEncontrado = await buscarProdutoOFF(codigo_barras);
 
-    if (produtoCosmos) {
-      setDadosPrePreenchidos(produtoCosmos);
+    // 3. Consulta API Cosmos (Fallback)
+    if (!produtoEncontrado) {
+      produtoEncontrado = await buscarProdutoCosmos(codigo_barras);
     }
 
-    // 3. Abre formulário (vazio ou preenchido)
+    if (produtoEncontrado) {
+      setDadosPrePreenchidos(produtoEncontrado);
+    }
+
+    // 4. Abre formulário (vazio ou preenchido)
     setTelaAtual('CADASTRO');
   }, [catalogo, adicionarAoCarrinho]);
 
   /**
    * Remove um item do carrinho.
    */
-  const removerItem = useCallback(async (gtin: string) => {
+  const removerItem = useCallback(async (codigo_barras: string) => {
     // Feedback tátil
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
       navigator.vibrate(50);
     }
 
     // Atualiza estado local
-    setCarrinho(prev => prev.filter(item => item.gtin !== gtin));
+    setCarrinho(prev => prev.filter(item => item.codigo_barras !== codigo_barras));
 
     // Persiste no repositório
     try {
-      await repositorioCarrinho.removerItem(gtin);
+      await repositorioCarrinho.removerItem(codigo_barras);
     } catch (erro) {
       console.error('Erro ao remover item:', erro);
     }
@@ -185,17 +241,17 @@ export default function App() {
    * 
    * Se a quantidade chegar a zero, remove o item.
    */
-  const alterarQuantidade = useCallback(async (gtin: string, delta: number) => {
+  const alterarQuantidade = useCallback(async (codigo_barras: string, delta: number) => {
     let novaQuantidade = 0;
 
     // Atualiza estado local
     setCarrinho(prev => {
       return prev.reduce((acc, item) => {
-        if (item.gtin === gtin) {
-          novaQuantidade = item.quantity + delta;
+        if (item.codigo_barras === codigo_barras) {
+          novaQuantidade = item.quantidade + delta;
 
           if (novaQuantidade > 0) {
-            acc.push({ ...item, quantity: novaQuantidade });
+            acc.push({ ...item, quantidade: novaQuantidade });
           } else {
             // Vibra ao remover
             if (typeof navigator !== 'undefined' && navigator.vibrate) {
@@ -212,14 +268,28 @@ export default function App() {
     // Persiste no repositório
     try {
       if (novaQuantidade > 0) {
-        await repositorioCarrinho.atualizarQuantidade(gtin, novaQuantidade);
+        await repositorioCarrinho.atualizarQuantidade(codigo_barras, novaQuantidade);
       } else {
-        await repositorioCarrinho.removerItem(gtin);
+        await repositorioCarrinho.removerItem(codigo_barras);
       }
     } catch (erro) {
       console.error('Erro ao alterar quantidade:', erro);
     }
   }, [repositorioCarrinho]);
+
+  /**
+   * Abre a tela de edição para um item do carrinho.
+   */
+  const aoEditarItem = useCallback((produto: Produto) => {
+    // Feedback tátil
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(50);
+    }
+    setCodigoLido(produto.codigo_barras);
+    setModoEdicao(true); // Ativa modo de edição
+    setDadosPrePreenchidos(null); // Garante que usa os dados do catálogo
+    setTelaAtual('CADASTRO');
+  }, []);
 
   /**
    * Executa a finalização da compra após confirmação do usuário.
@@ -363,13 +433,17 @@ export default function App() {
         ) : (
           <ul className="space-y-3">
             {carrinho.map((item) => (
-              <li key={item.gtin} className="bg-white p-3 rounded-lg shadow-sm border border-gray-100 flex gap-3 animate-fade-in relative group">
+              <li
+                key={item.codigo_barras}
+                onClick={() => aoEditarItem(item)}
+                className="bg-white p-3 rounded-lg shadow-sm border border-gray-100 flex gap-3 animate-fade-in relative group cursor-pointer hover:border-verde-300 transition-colors active:scale-[0.99] transform"
+              >
 
                 {/* Imagem */}
                 <div className="w-20 h-20 flex-shrink-0 bg-gray-100 rounded overflow-hidden flex items-center justify-center">
                   <img
-                    src={item.thumbnail || IMAGEM_PADRAO}
-                    alt={item.description}
+                    src={item.imagem || IMAGEM_PADRAO}
+                    alt={item.descricao}
                     className="max-w-full max-h-full object-contain"
                   />
                 </div>
@@ -378,10 +452,10 @@ export default function App() {
                 <div className="flex-1 min-w-0 flex flex-col justify-between">
                   <div>
                     <h3 className="font-semibold text-gray-800 truncate">
-                      {item.description}
+                      {item.descricao}
                     </h3>
                     <p className="text-xs text-gray-500 truncate">
-                      {item.brand} • {item.size}
+                      {item.marca} • {item.tamanho}
                     </p>
                   </div>
 
@@ -390,14 +464,17 @@ export default function App() {
                     <div className="flex items-center gap-1 bg-gray-50 rounded p-1 border border-gray-100">
                       {/* Botão Menos / Lixeira */}
                       <button
-                        onClick={() => alterarQuantidade(item.gtin, -1)}
-                        className={`w-8 h-8 flex items-center justify-center rounded transition-colors ${item.quantity === 1
-                            ? 'text-red-500 hover:bg-red-50'
-                            : 'text-verde-600 hover:bg-verde-50'
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          alterarQuantidade(item.codigo_barras, -1);
+                        }}
+                        className={`w-8 h-8 flex items-center justify-center rounded transition-colors ${item.quantidade === 1
+                          ? 'text-red-500 hover:bg-red-50'
+                          : 'text-verde-600 hover:bg-verde-50'
                           }`}
-                        title={item.quantity === 1 ? "Remover" : "Diminuir"}
+                        title={item.quantidade === 1 ? "Remover" : "Diminuir"}
                       >
-                        {item.quantity === 1 ? (
+                        {item.quantidade === 1 ? (
                           <i className="fas fa-trash-alt text-xs"></i>
                         ) : (
                           <i className="fas fa-minus text-xs"></i>
@@ -405,11 +482,14 @@ export default function App() {
                       </button>
 
                       <span className="text-sm font-bold w-6 text-center text-gray-700 select-none">
-                        {item.quantity}
+                        {item.quantidade}
                       </span>
 
                       <button
-                        onClick={() => alterarQuantidade(item.gtin, 1)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          alterarQuantidade(item.codigo_barras, 1);
+                        }}
                         className="w-8 h-8 flex items-center justify-center text-verde-600 hover:bg-verde-50 rounded transition-colors"
                       >
                         <i className="fas fa-plus text-xs"></i>
@@ -418,10 +498,10 @@ export default function App() {
 
                     <div className="text-right">
                       <div className="text-xs text-gray-400 font-mono">
-                        {item.quantity}x {formatarMoeda(item.price)}
+                        {item.quantidade}x {formatarMoeda(item.preco_estimado || 0)}
                       </div>
                       <div className="font-bold text-gray-900 font-mono text-lg">
-                        {formatarMoeda(item.price * item.quantity)}
+                        {formatarMoeda((item.preco_estimado || 0) * item.quantidade)}
                       </div>
                     </div>
                   </div>
@@ -494,6 +574,7 @@ export default function App() {
             setTelaAtual('DASHBOARD');
             setCodigoLido(null);
             setDadosPrePreenchidos(null);
+            setModoEdicao(false);
           }}
           produtoExistente={catalogo[codigoLido] || null}
           dadosPrePreenchidos={dadosPrePreenchidos}
