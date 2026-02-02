@@ -5,8 +5,9 @@
  */
 
 import { Produto } from '../types';
-import { servicoIA } from './ia/fabrica';
+import { padronizarDadosProduto } from './ia';
 import { formatarTitulo } from './utilitarios';
+import { CosmosAdapter } from './adapters/cosmos.adapter';
 
 // Em desenvolvimento, usa o proxy configurado no vite.config.ts para evitar CORS.
 // Em produção, usa API Route serverless (/api/cosmos) que faz proxy.
@@ -76,36 +77,31 @@ export async function buscarProdutoCosmos(gtin: string): Promise<Produto | null>
     }
 
     const dados: ProdutoCosmosResponse = await response.json();
+    console.log('[Cosmos] Resposta Bruta:', dados);
 
-    // Mapeamento inicial
-    const description = formatarTitulo(dados.description);
-    let brand = formatarTitulo(dados.brand?.name || '');
-    let size = extrairTamanho(dados.description) || '';
+    // Adapter converte para o modelo de domínio (pt-BR)
+    const produto = CosmosAdapter.paraDominio(dados);
 
-    // Enriquecimento Inteligente (Melhoria UX #1)
-    // Se não tiver marca mas tiver descrição, usa IA de texto para inferir
-    if (!brand && description) {
-      console.log('[Cosmos] Marca ausente. Tentando inferir via IA...');
+    // 2. Padronização via IA (Melhoria de Qualidade de Dados)
+    if (produto.descricao) {
+      // Monta um contexto rico para a IA (igual ao OpenFoodFacts)
+      const contexto = `Produto: ${produto.descricao}. Marca: ${produto.marca || '?'}. Tamanho: ${produto.tamanho || '?'}`;
+
       try {
-        const dadosIA = await servicoIA.extrairDadosDeTexto(description);
-        if (dadosIA) {
-          if (dadosIA.brand) brand = dadosIA.brand;
-          // Se a IA também achou tamanho e não tínhamos extraído via regex, usa da IA
-          if (dadosIA.size && !size) size = dadosIA.size;
+        const dadosPadronizados = await padronizarDadosProduto(contexto);
+
+        if (dadosPadronizados) {
+          // Atualiza/Limpa os dados com o retorno da IA
+          if (dadosPadronizados.descricao) produto.descricao = dadosPadronizados.descricao;
+          if (dadosPadronizados.marca && dadosPadronizados.marca !== 'Genérica') produto.marca = dadosPadronizados.marca;
+          if (dadosPadronizados.tamanho) produto.tamanho = dadosPadronizados.tamanho.toUpperCase();
         }
       } catch (err) {
-        console.warn('[Cosmos] Falha ao inferir marca via IA:', err);
+        console.warn('[Cosmos] Falha na padronização IA (usando dados originais):', err);
       }
     }
 
-    return {
-      gtin: String(dados.gtin),
-      description,
-      brand,
-      size,
-      price: dados.avg_price || 0, // Usa preço médio como sugestão
-      thumbnail: dados.thumbnail || undefined,
-    };
+    return produto;
   } catch (erro: any) {
     // Trata erros de rede/CORS sem quebrar a app
     if (erro instanceof TypeError && erro.message.includes('fetch')) {
@@ -115,14 +111,4 @@ export async function buscarProdutoCosmos(gtin: string): Promise<Produto | null>
     }
     return null;
   }
-}
-
-/**
- * Tenta extrair o tamanho/peso da string de descrição.
- * Ex: "... 1KG" -> "1KG"
- */
-function extrairTamanho(descricao: string): string | null {
-  const regex = /\b(\d+(?:[.,]\d+)?\s*(?:KG|G|L|ML|MM|M))\b/i;
-  const match = descricao.match(regex);
-  return match ? match[1].toUpperCase() : null;
 }
