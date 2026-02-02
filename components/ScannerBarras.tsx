@@ -34,7 +34,7 @@ export const ScannerBarras: React.FC<PropsScanner> = ({ aoLerCodigo, aoCancelar 
         if (scannerRef.current) {
           try {
             await scannerRef.current.stop();
-          } catch (e) {}
+          } catch (e) { }
         }
 
         const scanner = new Html5Qrcode(elementoId);
@@ -60,24 +60,32 @@ export const ScannerBarras: React.FC<PropsScanner> = ({ aoLerCodigo, aoCancelar 
             // Feedback tátil
             try {
               if (navigator.vibrate) navigator.vibrate(200);
-            } catch (e) {}
+            } catch (e) { }
 
             // Pausa e retorna
             scanner.pause(true);
             aoLerCodigo(codigoDecodificado);
           },
-          erro => {} // Ignora erros de frame
+          erro => { } // Ignora erros de frame
         );
 
         setStatusCamera('ativa');
       } catch (erro) {
         setStatusCamera('erro');
         const msg = erro instanceof Error ? erro.message : String(erro);
-        console.error('Erro fatal scanner:', msg);
 
-        if (msg.includes('Permission')) setMensagemErro('Permissão de câmera negada.');
-        else if (msg.includes('NotFound')) setMensagemErro('Câmera não encontrada.');
-        else setMensagemErro('Erro ao acessar câmera. Use o campo abaixo.');
+        // Em PC desktop ou sem permissão, isso é esperado. Não é um erro fatal.
+        if (msg.includes('NotFound') || msg.includes('Permission') || msg.includes('PermissionDeniedError')) {
+          console.warn('Scanner indisponível (Câmera não encontrada ou permissão negada):', msg);
+          if (msg.includes('NotFound')) setMensagemErro('Câmera não encontrada. Digite o código manualmente abaixo.');
+          else setMensagemErro('Acesso à câmera negado. Digite o código manualmente abaixo.');
+        } else {
+          console.error('Erro fatal scanner:', msg);
+          setMensagemErro('Erro ao acessar câmera. Digite o código manualmente abaixo.');
+        }
+
+        // Se falhou ao iniciar, não devemos tentar parar no cleanup
+        scannerRef.current = null;
       } finally {
         scannerMountingRef.current = false;
       }
@@ -89,7 +97,7 @@ export const ScannerBarras: React.FC<PropsScanner> = ({ aoLerCodigo, aoCancelar 
       clearTimeout(timeoutId);
       scannerMountingRef.current = false;
       if (scannerRef.current) {
-        scannerRef.current.stop().catch(() => {});
+        scannerRef.current.stop().catch(() => { });
         scannerRef.current = null;
       }
     };
@@ -110,7 +118,7 @@ export const ScannerBarras: React.FC<PropsScanner> = ({ aoLerCodigo, aoCancelar 
     if (scannerRef.current) {
       scannerRef.current
         .stop()
-        .catch(() => {})
+        .catch(() => { })
         .finally(aoCancelar);
     } else {
       aoCancelar();

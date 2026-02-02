@@ -20,11 +20,11 @@ export const FormularioProduto: React.FC<PropsFormulario> = ({
   produtoExistente,
   dadosPrePreenchidos,
 }) => {
-  const [description, setDescription] = useState('');
-  const [brand, setBrand] = useState('');
-  const [size, setSize] = useState('');
+  const [descricao, setDescricao] = useState('');
+  const [marca, setMarca] = useState('');
+  const [tamanho, setTamanho] = useState('');
   const [priceInput, setPriceInput] = useState('');
-  const [thumbnail, setThumbnail] = useState<string | undefined>(undefined);
+  const [imagem, setImagem] = useState<string | undefined>(undefined);
 
   const [erro, setErro] = useState<string | null>(null);
   const [campoComErro, setCampoComErro] = useState<string | null>(null);
@@ -32,9 +32,9 @@ export const FormularioProduto: React.FC<PropsFormulario> = ({
   // Controle de Foco Único
   const [focoInicialFeito, setFocoInicialFeito] = useState(false);
 
-  const refDescription = useRef<HTMLInputElement>(null);
-  const refBrand = useRef<HTMLInputElement>(null);
-  const refSize = useRef<HTMLInputElement>(null);
+  const refDescricao = useRef<HTMLInputElement>(null);
+  const refMarca = useRef<HTMLInputElement>(null);
+  const refTamanho = useRef<HTMLInputElement>(null);
   const refPrice = useRef<HTMLInputElement>(null);
 
   const [imagemParaRecorte, setImagemParaRecorte] = useState<string | null>(null);
@@ -44,46 +44,36 @@ export const FormularioProduto: React.FC<PropsFormulario> = ({
   // Flag para controlar inicialização única
   const [inicializado, setInicializado] = useState(false);
 
-  // Preenche dados iniciais APENAS uma vez quando o formulário abre
-  // Não sobrescreve valores que o usuário já alterou
+  // Preenche dados iniciais
   useEffect(() => {
-    // Se já foi inicializado para este GTIN, não faz nada
-    if (inicializado) return;
-
     if (produtoExistente) {
-      setDescription(produtoExistente.description);
-      setBrand(produtoExistente.brand);
-      setSize(produtoExistente.size);
-      setPriceInput(produtoExistente.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 }));
-      setThumbnail(produtoExistente.thumbnail);
+      // Edição de produto existente (prioridade máxima)
+      if (!inicializado) {
+        setDescricao(produtoExistente.descricao);
+        setMarca(produtoExistente.marca);
+        setTamanho(produtoExistente.tamanho);
+        setPriceInput((produtoExistente.preco_estimado || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }));
+        setImagem(produtoExistente.imagem);
+        setInicializado(true);
+      }
     } else if (dadosPrePreenchidos) {
-      if (dadosPrePreenchidos.description) setDescription(dadosPrePreenchidos.description);
-      if (dadosPrePreenchidos.brand) setBrand(dadosPrePreenchidos.brand);
-      if (dadosPrePreenchidos.size) setSize(dadosPrePreenchidos.size);
+      // Preenchimento automático (API/IA)
+      // Só preenche se o campo estiver vazio para não sobrescrever o que o usuário já digitou
+      // OU se for a primeira inicialização
 
-      if (dadosPrePreenchidos.price && dadosPrePreenchidos.price > 0) {
+      if (!descricao && dadosPrePreenchidos.descricao) setDescricao(dadosPrePreenchidos.descricao);
+      if (!marca && dadosPrePreenchidos.marca) setMarca(dadosPrePreenchidos.marca);
+      if (!tamanho && dadosPrePreenchidos.tamanho) setTamanho(dadosPrePreenchidos.tamanho);
+
+      if (!priceInput && dadosPrePreenchidos.preco_estimado && dadosPrePreenchidos.preco_estimado > 0) {
         setPriceInput(
-          dadosPrePreenchidos.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
+          dadosPrePreenchidos.preco_estimado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
         );
       }
 
-      if (dadosPrePreenchidos.thumbnail) setThumbnail(dadosPrePreenchidos.thumbnail);
+      if (!imagem && dadosPrePreenchidos.imagem) setImagem(dadosPrePreenchidos.imagem);
     }
-
-    // Marca como inicializado para não rodar novamente
-    setInicializado(true);
-    setFocoInicialFeito(false);
-  }, [produtoExistente, dadosPrePreenchidos, gtinInicial, inicializado]);
-
-  // Reseta flag de inicialização quando muda de produto (novo GTIN)
-  useEffect(() => {
-    setInicializado(false);
-    setDescription('');
-    setBrand('');
-    setSize('');
-    setPriceInput('');
-    setThumbnail(undefined);
-  }, [gtinInicial]);
+  }, [produtoExistente, dadosPrePreenchidos, inicializado]);
 
   // Lógica de Foco Inteligente (Executa apenas uma vez quando os dados estabilizam)
   useEffect(() => {
@@ -94,14 +84,14 @@ export const FormularioProduto: React.FC<PropsFormulario> = ({
       let focou = false;
 
       // Prioridade: Campos vazios
-      if (!description) {
-        refDescription.current?.focus();
+      if (!descricao) {
+        refDescricao.current?.focus();
         focou = true;
-      } else if (!brand) {
-        refBrand.current?.focus();
+      } else if (!marca) {
+        refMarca.current?.focus();
         focou = true;
-      } else if (!size) {
-        refSize.current?.focus();
+      } else if (!tamanho) {
+        refTamanho.current?.focus();
         focou = true;
       } else {
         // Se tudo preenchido, foca no preço para validação (Regra do Usuário)
@@ -114,14 +104,14 @@ export const FormularioProduto: React.FC<PropsFormulario> = ({
     }, 600); // Delay maior para garantir animação e preenchimento
 
     return () => clearTimeout(timer);
-  }, [description, brand, size, analisandoIA, focoInicialFeito]);
+  }, [descricao, marca, tamanho, analisandoIA, focoInicialFeito]);
   // Removemos priceInput das dependências para não refocar ao digitar!
 
   const lidarComSelecaoImagem = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setErro(null);
       try {
-        const imagemBase64 = await comprimirImagem(e.target.files[0], 0.9, 800);
+        const imagemBase64 = await comprimirImagem(e.target.files[0], 0.6, 500);
         setImagemParaRecorte(imagemBase64);
         setMostraRecorte(true);
         e.target.value = '';
@@ -133,10 +123,10 @@ export const FormularioProduto: React.FC<PropsFormulario> = ({
 
   const aoConfirmarRecorte = async (fotoRecortadaBase64: string) => {
     setMostraRecorte(false);
-    setThumbnail(fotoRecortadaBase64);
+    setImagem(fotoRecortadaBase64);
     setImagemParaRecorte(null);
 
-    const precisaOcr = !description || !brand;
+    const precisaOcr = !descricao || !marca;
 
     if (!precisaOcr) {
       if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(50);
@@ -148,9 +138,9 @@ export const FormularioProduto: React.FC<PropsFormulario> = ({
     try {
       const dadosExtraidos = await extrairDadosDoRotulo(fotoRecortadaBase64);
       if (dadosExtraidos) {
-        if (dadosExtraidos.description) setDescription(dadosExtraidos.description);
-        if (dadosExtraidos.brand) setBrand(dadosExtraidos.brand);
-        if (dadosExtraidos.size) setSize(dadosExtraidos.size);
+        if (dadosExtraidos.descricao) setDescricao(dadosExtraidos.descricao);
+        if (dadosExtraidos.marca) setMarca(dadosExtraidos.marca);
+        if (dadosExtraidos.tamanho) setTamanho(dadosExtraidos.tamanho);
         if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate([50, 50, 50]);
       }
     } catch (err: any) {
@@ -169,7 +159,7 @@ export const FormularioProduto: React.FC<PropsFormulario> = ({
   const removerFoto = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    setThumbnail(undefined);
+    setImagem(undefined);
   };
 
   const lidarMudancaPreco = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -195,22 +185,22 @@ export const FormularioProduto: React.FC<PropsFormulario> = ({
     setErro(null);
     setCampoComErro(null);
 
-    if (!thumbnail) {
+    if (!imagem) {
       setErro('A foto do produto é obrigatória.');
       return;
     }
 
-    if (!description.trim()) {
+    if (!descricao.trim()) {
       setErro('O nome do produto é obrigatório.');
-      setCampoComErro('description');
-      refDescription.current?.focus();
+      setCampoComErro('descricao');
+      refDescricao.current?.focus();
       return;
     }
 
-    if (size && !REGEX_UNIDADE.test(size)) {
+    if (tamanho && !REGEX_UNIDADE.test(tamanho)) {
       setErro('Tamanho inválido (Ex: 1L, 500g).');
-      setCampoComErro('size');
-      refSize.current?.focus();
+      setCampoComErro('tamanho');
+      refTamanho.current?.focus();
       return;
     }
 
@@ -225,12 +215,12 @@ export const FormularioProduto: React.FC<PropsFormulario> = ({
     }
 
     const novoProduto: Produto = {
-      gtin: gtinInicial,
-      description,
-      brand: brand || 'Genérica',
-      size: size || '-',
-      price: precoNumerico,
-      thumbnail,
+      codigo_barras: gtinInicial,
+      descricao,
+      marca: marca || 'Genérica',
+      tamanho: tamanho || '-',
+      preco_estimado: precoNumerico,
+      imagem,
     };
 
     aoSalvar(novoProduto);
@@ -245,6 +235,7 @@ export const FormularioProduto: React.FC<PropsFormulario> = ({
     <div className="fixed inset-0 bg-white z-50 flex flex-col h-full overflow-hidden">
       <div className="bg-verde-600 text-white p-4 shadow-md flex items-center gap-3 shrink-0">
         <button
+          type="button"
           onClick={aoCancelar}
           className="p-2 -ml-2 hover:bg-verde-700 rounded-full transition-colors"
         >
@@ -272,11 +263,10 @@ export const FormularioProduto: React.FC<PropsFormulario> = ({
         <form id="form-produto" onSubmit={validarESalvar} className="flex flex-col gap-3 h-full">
           {/* FOTO */}
           <div
-            className={`transition-all duration-300 ${
-              !thumbnail ? 'ring-2 ring-red-100 rounded-xl p-1 bg-red-50' : ''
-            }`}
+            className={`transition-all duration-300 ${!imagem ? 'ring-2 ring-red-100 rounded-xl p-1 bg-red-50' : ''
+              }`}
           >
-            {!thumbnail ? (
+            {!imagem ? (
               <div className="flex gap-3 items-stretch h-36">
                 <div className="w-32 shrink-0 relative rounded-xl border-2 border-dashed border-gray-300 bg-white flex flex-col items-center justify-center text-gray-400 group cursor-pointer">
                   {analisandoIA ? (
@@ -319,9 +309,8 @@ export const FormularioProduto: React.FC<PropsFormulario> = ({
 
                   {/* Botão com Borda Rainbow Animada Corrigida */}
                   <label
-                    className={`w-full relative group cursor-pointer rounded-lg overflow-hidden p-[3px] transition-all active:scale-95 ${
-                      analisandoIA ? 'cursor-wait opacity-80' : 'shadow-lg'
-                    }`}
+                    className={`w-full relative group cursor-pointer rounded-lg overflow-hidden p-[3px] transition-all active:scale-95 ${analisandoIA ? 'cursor-wait opacity-80' : 'shadow-lg'
+                      }`}
                   >
                     {/* Gradient Layer */}
                     {!analisandoIA && (
@@ -358,16 +347,16 @@ export const FormularioProduto: React.FC<PropsFormulario> = ({
               <div className="flex flex-col items-center shrink-0 animate-fade-in">
                 <div className="relative group">
                   <div
-                    className={`w-32 h-32 rounded-xl overflow-hidden border-2 border-dashed flex items-center justify-center relative transition-colors ${
-                      thumbnail ? 'border-verde-500 bg-white shadow-sm' : 'border-gray-300'
-                    }`}
+                    className={`w-32 h-32 rounded-xl overflow-hidden border-2 border-dashed flex items-center justify-center relative transition-colors ${imagem ? 'border-verde-500 bg-white shadow-sm' : 'border-gray-300'
+                      }`}
                   >
                     <img
-                      src={thumbnail}
+                      src={imagem}
                       alt="Preview"
                       className="w-full h-full object-contain p-1"
                     />
                     <button
+                      type="button"
                       onClick={removerFoto}
                       className="absolute top-1 right-1 bg-red-500 text-white w-7 h-7 rounded-full shadow-lg flex items-center justify-center hover:bg-red-600 z-20"
                     >
@@ -397,15 +386,14 @@ export const FormularioProduto: React.FC<PropsFormulario> = ({
             <div>
               <label className={classeLabel}>Nome do Produto</label>
               <input
-                ref={refDescription}
-                value={description}
+                ref={refDescricao}
+                value={descricao}
                 onChange={e => {
-                  setDescription(e.target.value);
-                  if (campoComErro === 'description') setCampoComErro(null);
+                  setDescricao(e.target.value);
+                  if (campoComErro === 'descricao') setCampoComErro(null);
                 }}
-                className={`${classeInput} ${analisandoIA ? 'animate-pulse bg-gray-600' : ''} ${
-                  campoComErro === 'description' ? 'border-red-500 ring-2 ring-red-400' : ''
-                }`}
+                className={`${classeInput} ${analisandoIA ? 'animate-pulse bg-gray-600' : ''} ${campoComErro === 'descricao' ? 'border-red-500 ring-2 ring-red-400' : ''
+                  }`}
                 placeholder="Ex: Leite Integral"
                 disabled={analisandoIA}
               />
@@ -414,9 +402,9 @@ export const FormularioProduto: React.FC<PropsFormulario> = ({
               <div className="flex-[3]">
                 <label className={classeLabel}>Marca</label>
                 <input
-                  ref={refBrand}
-                  value={brand}
-                  onChange={e => setBrand(e.target.value)}
+                  ref={refMarca}
+                  value={marca}
+                  onChange={e => setMarca(e.target.value)}
                   className={`${classeInput} ${analisandoIA ? 'animate-pulse bg-gray-600' : ''}`}
                   placeholder="Ex: Longa Vida"
                   disabled={analisandoIA}
@@ -425,17 +413,15 @@ export const FormularioProduto: React.FC<PropsFormulario> = ({
               <div className="flex-[2]">
                 <label className={classeLabel}>Tamanho</label>
                 <input
-                  ref={refSize}
-                  value={size}
+                  ref={refTamanho}
+                  value={tamanho}
                   onChange={e => {
-                    setSize(e.target.value);
-                    if (campoComErro === 'size') setCampoComErro(null);
+                    setTamanho(e.target.value);
+                    if (campoComErro === 'tamanho') setCampoComErro(null);
                   }}
-                  className={`${classeInput} ${
-                    size && !REGEX_UNIDADE.test(size) ? 'border-red-400 text-red-100' : ''
-                  } ${analisandoIA ? 'animate-pulse bg-gray-600' : ''} ${
-                    campoComErro === 'size' ? 'border-red-500 ring-2 ring-red-400' : ''
-                  }`}
+                  className={`${classeInput} ${tamanho && !REGEX_UNIDADE.test(tamanho) ? 'border-red-400 text-red-100' : ''
+                    } ${analisandoIA ? 'animate-pulse bg-gray-600' : ''} ${campoComErro === 'tamanho' ? 'border-red-500 ring-2 ring-red-400' : ''
+                    }`}
                   placeholder="Ex: 1L"
                   disabled={analisandoIA}
                 />
@@ -455,11 +441,10 @@ export const FormularioProduto: React.FC<PropsFormulario> = ({
                   lidarMudancaPreco(e);
                   if (campoComErro === 'price') setCampoComErro(null);
                 }}
-                className={`w-full p-2 bg-white border-2 rounded-lg text-gray-900 font-bold text-2xl placeholder-gray-300 focus:outline-none shadow-sm ${
-                  campoComErro === 'price'
-                    ? 'border-red-500 ring-2 ring-red-400'
-                    : 'border-verde-500'
-                }`}
+                className={`w-full p-2 bg-white border-2 rounded-lg text-gray-900 font-bold text-2xl placeholder-gray-300 focus:outline-none shadow-sm ${campoComErro === 'price'
+                  ? 'border-red-500 ring-2 ring-red-400'
+                  : 'border-verde-500'
+                  }`}
                 placeholder="0,00"
               />
               <p className="text-[10px] text-gray-500 mt-1 text-right">
@@ -476,13 +461,13 @@ export const FormularioProduto: React.FC<PropsFormulario> = ({
 
           <div className="pt-4 pb-8 mt-auto">
             <button
+              type="submit"
               onClick={validarESalvar}
               disabled={analisandoIA}
-              className={`w-full text-white py-4 rounded-xl font-bold text-lg shadow-lg transition-all ${
-                analisandoIA
-                  ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-verde-600 hover:bg-verde-700 active:scale-95'
-              }`}
+              className={`w-full text-white py-4 rounded-xl font-bold text-lg shadow-lg transition-all ${analisandoIA
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-verde-600 hover:bg-verde-700 active:scale-95'
+                }`}
             >
               {analisandoIA ? 'Processando...' : 'Salvar Produto'}
             </button>
