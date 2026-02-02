@@ -1,123 +1,102 @@
-# Definição de Escopo — Preço Certo
+# Escopo Técnico - Sem Susto 🛒
 
-## 1. Problema
-
-Consumidores perdem o controle do valor total durante compras no supermercado, resultando em surpresas no caixa e orçamentos estourados.
-
-## 2. Solução
-
-Aplicativo web (PWA) que permite escanear produtos durante a compra, registrar preços e acompanhar o total acumulado em tempo real, com sincronização em nuvem.
-
-## 3. Público-Alvo
-
-- Famílias que fazem compras semanais/mensais
-- Pessoas com orçamento controlado
-- Consumidores que comparam preços entre lojas
+Este documento contém referências técnicas e fluxogramas que servem de guia para o desenvolvimento.
 
 ---
 
-## 4. Stack Tecnológica
+## Fluxo de Escaneamento de Produto
 
-### Frontend
+O diagrama abaixo representa o fluxo completo quando o usuário escaneia um código de barras:
 
-| Tecnologia      | Versão | Propósito           |
-| --------------- | ------ | ------------------- |
-| React           | 19     | Biblioteca UI       |
-| TypeScript      | 5.8    | Tipagem estática    |
-| Vite            | 7      | Build tool          |
-| vite-plugin-pwa | -      | Progressive Web App |
+```mermaid
+flowchart TD
+    subgraph ENTRADA["📷 Entrada"]
+        A[Usuário escaneia código de barras]
+    end
 
-### Backend (BaaS)
+    subgraph CASCATA["🔍 Busca em Cascata"]
+        B{1. LocalStorage?}
+        C{2. Supabase?}
+        D{3. OpenFoodFacts API?}
+        E{4. Cosmos API?}
+    end
 
-| Tecnologia         | Propósito                       |
-| ------------------ | ------------------------------- |
-| **Supabase**       | Banco de dados + Auth + API     |
-| PostgreSQL         | Banco de dados relacional       |
-| Row Level Security | Isolamento de dados por usuário |
+    subgraph VALIDACAO["✅ Validação"]
+        V{Dados completos?}
+        V1[Foto]
+        V2[Marca]
+        V3[Tamanho]
+    end
 
-### Inteligência Artificial
+    subgraph CADASTRO["📝 Cadastro Manual"]
+        F[Formulário]
+        F1[Usuário preenche campos]
+        F2[IA extrai dados da foto do rótulo]
+    end
 
-| Tecnologia    | Propósito                     |
-| ------------- | ----------------------------- |
-| Google Gemini | Leitura automática de rótulos |
+    subgraph PERSISTENCIA["💾 Persistência"]
+        G[(Supabase)]
+        H[(LocalStorage)]
+    end
 
-### Infraestrutura
+    subgraph SUCESSO["🛒 Sucesso"]
+        Z[Adiciona ao carrinho]
+    end
 
-| Tecnologia     | Propósito                           |
-| -------------- | ----------------------------------- |
-| Dev Containers | Ambiente de desenvolvimento isolado |
-| Docker         | Containerização                     |
-| Vercel/Netlify | Hospedagem do frontend              |
+    %% Fluxo principal
+    A --> B
+    B -->|Sim| V
+    B -->|Não| C
+    C -->|Sim| V
+    C -->|Não| D
+    D -->|Sim| V
+    D -->|Não| E
+    E -->|Sim| V
+    E -->|Não| F
 
----
+    %% Validação de dados completos
+    V -->|Sim| Z
+    V -->|Não| F
+    V -.-> V1
+    V -.-> V2
+    V -.-> V3
 
-## 5. Funcionalidades
+    %% Cadastro manual
+    F --> F1
+    F1 --> F2
+    F2 --> G
+    G --> H
+    H --> Z
 
-### MVP (Fases 0-4)
-
-| Feature           | Descrição                   | Fase |
-| ----------------- | --------------------------- | ---- |
-| Dev Container     | Ambiente reproduzível       | 0    |
-| Login com Google  | Autenticação via Supabase   | 1    |
-| Catálogo na nuvem | Produtos salvos por usuário | 2    |
-| Scanner de barras | Leitura via câmera          | 3    |
-| Carrinho          | Controle de quantidade      | 2-3  |
-| Histórico         | Compras finalizadas         | 3    |
-| PWA               | App instalável              | 4    |
-
-### Pós-MVP
-
-| Feature              | Descrição           |
-| -------------------- | ------------------- |
-| Comparador de preços | Preço por loja      |
-| Listas predefinidas  | Compras recorrentes |
-| Modo escuro          | Tema alternativo    |
-
----
-
-## 6. Fora do Escopo
-
-- Versão nativa iOS/Android (consideramos PWA suficiente para MVP)
-- Integração com APIs de preços externos
-- Pagamentos dentro do app
-- Funcionalidades sociais (compartilhar listas)
-
----
-
-## 7. Modelo de Dados
-
-```
-┌─────────────┐     ┌──────────────┐     ┌─────────────┐
-│   usuarios  │     │  produtos    │     │   precos    │
-│  (auth.users│◄────┤              │◄────┤             │
-│   Supabase) │     │ codigo_barras│     │             │
-│             │     │ nome         │     │ loja        │
-│             │     │ marca        │     │ data        │
-└─────────────┘     └──────────────┘     └─────────────┘
-       │
-       │            ┌─────────────┐
-       └───────────►│   compras   │
-                    │             │
-                    │ total       │
-                    │ itens (JSON)│
-                    │ data        │
-                    └─────────────┘
+    %% Estilos
+    style ENTRADA fill:#e8f5e9
+    style SUCESSO fill:#e8f5e9
+    style CASCATA fill:#e3f2fd
+    style VALIDACAO fill:#fff3e0
+    style CADASTRO fill:#fce4ec
+    style PERSISTENCIA fill:#f3e5f5
 ```
 
+### Ordem de Prioridade da Cascata
+
+| Posição | Fonte           | Latência Esperada | Observação                          |
+|---------|-----------------|-------------------|-------------------------------------|
+| 1       | LocalStorage    | <10ms             | Cache local do usuário              |
+| 2       | Supabase        | <200ms            | Nosso banco de dados compartilhado  |
+| 3       | OpenFoodFacts   | ~500ms            | API pública gratuita                |
+| 4       | Cosmos          | ~800ms            | API comercial (fallback final)      |
+
+### Tratamento de Dados Parciais
+
+Se qualquer fonte retornar dados incompletos (sem foto, marca ou tamanho), o sistema deve:
+
+1. **Exibir os dados encontrados** no formulário (pré-preenchido)
+2. **Solicitar ao usuário** que complete as informações faltantes
+3. **Salvar o produto completo** no Supabase + LocalStorage
+
 ---
 
-## 8. Ambiente de Desenvolvimento
+## Referências
 
-O projeto utiliza **Dev Containers** para garantir ambiente reproduzível:
-
-- Container Node.js 20 (imagem oficial Microsoft)
-- PostgreSQL local para desenvolvimento
-- Extensões pré-configuradas (ESLint, Prettier, Prisma)
-- Variáveis de ambiente isoladas
-
-**Comando para iniciar:**
-
-```bash
-# VS Code detecta automaticamente o .devcontainer
-# Ou manualmente: Ctrl+Shift+P → "Reopen in Container"
-```
+- [roadmap.md](./roadmap.md) - Planejamento de fases
+- [README.md](../README.md) - Visão geral do projeto

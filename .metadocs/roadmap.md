@@ -86,27 +86,66 @@
 
 ---
 
-## Fase 0.7: Supabase Free Tier 🗄️ (Atual)
-> **Objetivo:** Configurar banco de dados gratuito na nuvem e importar dados de produtos brasileiros.
+## Fase 0.7: Planejamento Técnico do Banco de Dados 📐 ✅
+> **Objetivo:** Definir arquitetura de dados antes de criar infraestrutura
 > **Duração:** 1 dia
 
-### Configuração Inicial
-- [ ] **0.7.1** Criar conta no Supabase (https://supabase.com)
-- [ ] **0.7.2** Criar projeto "sem-susto" (região: São Paulo)
-- [ ] **0.7.3** Obter credenciais (URL + Anon Key)
+- [ ] **0.7.1** Analisar estrutura do CSV `produtos_brasil_v1.csv` (31k produtos)
+- [ ] **0.7.2** Definir schema da tabela `produtos` (colunas vs JSONB) — Híbrido escolhido
+- [ ] **0.7.3** Decidir estratégia de importação (bulk insert vs streaming) — Bulk Insert
+- [ ] **0.7.4** Documentar modelo de dados final — `infra/migrations/001_criar_tabela_produtos.sql`
+- [ ] **0.7.5** Definir índices necessários (GTIN, busca textual) — `infra/migrations/002_criar_indices.sql`
 
-### Modelagem e Importação
-- [ ] **0.7.4** Criar tabela `produtos_off` com coluna JSONB para dados RAW
-- [ ] **0.7.5** Criar script de importação do CSV para o Supabase
-- [ ] **0.7.6** Executar importação dos 31k produtos
-- [ ] **0.7.7** Criar índices para busca por GTIN (código de barras)
+**Critério de sucesso:** Documento de modelagem aprovado. ✅
 
-### Integração com Aplicação
-- [ ] **0.7.8** Instalar cliente Supabase no projeto (`@supabase/supabase-js`)
-- [ ] **0.7.9** Implementar `buscarProdutoLocal()` que consulta o Supabase
-- [ ] **0.7.10** Atualizar fluxo de busca: Supabase -> Open Food Facts API -> Cosmos
+---
 
-**Critério de sucesso:** Escanear produto e receber dados do banco Supabase em <500ms.
+## Fase 0.8: Implementação do Fluxo de Busca em Cascata 🔄
+> **Objetivo:** Novo fluxo de busca com fallback progressivo
+> **Duração:** 2-3 dias
+
+### Serviços de Busca
+- [ ] **0.8.1** Criar `services/openfoodfacts.ts` (integração com API pública)
+- [ ] **0.8.2** Refatorar `services/cosmos.ts` para ser mais defensivo
+- [ ] **0.8.3** Criar `services/buscador-produto.ts` (orquestrador da cascata)
+
+### Tratamento de Dados Parciais
+- [ ] **0.8.4** Implementar detecção de campos faltantes (foto, marca, tamanho)
+- [ ] **0.8.5** Criar componente `SolicitarFoto` para upload quando necessário
+
+### Tutorial e UX
+- [ ] **0.8.6** Reduzir tutorial inicial para 2 slides (remover slide 3 do onboarding)
+- [ ] **0.8.7** Mover tela 3 do tutorial para exibição contextual: mostrar na primeira vez que usuário usar câmera/galeria
+- [ ] **0.8.8** Melhorar feedback visual durante busca em cascata (loading states)
+
+**Critério de sucesso:** Escanear produto desconhecido e ver cascata de busca funcionar.
+
+---
+
+## Fase 0.9: Configuração do Supabase 🗄️
+> **Objetivo:** Banco de dados na nuvem configurado e populado
+> **Duração:** 1 dia
+
+- [ ] **0.9.1** Criar conta/projeto no Supabase (região: São Paulo)
+- [ ] **0.9.2** Criar tabela conforme schema definido na Fase 0.7
+- [ ] **0.9.3** Criar script de importação do CSV
+- [ ] **0.9.4** Executar importação dos 31k produtos
+- [ ] **0.9.5** Validar índices e performance de busca
+
+**Critério de sucesso:** Query por GTIN retornando em <200ms.
+
+---
+
+## Fase 0.10: Integração Supabase + Aplicação 🔌
+> **Objetivo:** Conectar frontend ao banco de dados
+> **Duração:** 1 dia
+
+- [ ] **0.10.1** Instalar `@supabase/supabase-js`
+- [ ] **0.10.2** Criar `RepositorioProdutosSupabase`
+- [ ] **0.10.3** Integrar repositório no fluxo de busca (posição 2 da cascata)
+- [ ] **0.10.4** Implementar salvamento de novos produtos no Supabase
+
+**Critério de sucesso:** Produto cadastrado aparece para outros usuários.
 
 ---
 
