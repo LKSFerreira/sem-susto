@@ -98,6 +98,13 @@
 
 **Critério de sucesso:** Documento de modelagem aprovado. ✅
 
+> [!NOTE]
+> **Decisão Técnica: Armazenamento de Imagens (MVP)**
+> Para evitar complexidade de upload de arquivos no MVP, adotou-se uma **Estratégia Híbrida**:
+> - O campo `imagem` (string) aceita tanto URLs remotas (`https://...`) quanto Base64 (`data:image/...`).
+> - Fotos tiradas pelo usuário são comprimidas no client-side e salvas como Base64 no `localStorage`.
+> - Risco aceito: Limite de armazenamento do browser (5-10MB). Solução temporária até a integração com Storage na Nuvem (Fase 2).
+
 ---
 
 ## Fase 0.8: Implementação do Fluxo de Busca em Cascata 🔄
