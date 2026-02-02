@@ -13,18 +13,18 @@ export class ServicoIAMock implements ServicoLeituraRotulo {
 
     // Retorna dados fixos para teste
     return {
-      description: "Produto Teste Mockado",
-      brand: "Marca Genérica",
-      size: "1kg"
+      descricao: "Produto Teste Mockado",
+      marca: "Marca Genérica",
+      tamanho: "1kg"
     };
   }
 
   async extrairDadosDeTexto(descricao: string): Promise<DadosProdutoExtraidos | null> {
     await new Promise(resolve => setTimeout(resolve, 500));
     return {
-      description: descricao,
-      brand: "Marca Mockada Texto",
-      size: "500g"
+      descricao: descricao,
+      marca: "Marca Mockada Texto",
+      tamanho: "500g"
     };
   }
 }

@@ -18,11 +18,11 @@ export class ServicoIAGemini implements ServicoLeituraRotulo {
     return {
       type: Type.OBJECT,
       properties: {
-        description: { type: Type.STRING, description: "Nome principal do produto." },
-        brand: { type: Type.STRING, description: "Marca do fabricante." },
-        size: { type: Type.STRING, description: "Peso líquido ou volume (ex: 1kg, 500ml)." },
+        descricao: { type: Type.STRING, description: "Nome principal do produto." },
+        marca: { type: Type.STRING, description: "Marca do fabricante." },
+        tamanho: { type: Type.STRING, description: "Peso líquido ou volume (ex: 1kg, 500ml)." },
       },
-      required: ["description"],
+      required: ["descricao"],
     };
   }
 
@@ -33,8 +33,8 @@ export class ServicoIAGemini implements ServicoLeituraRotulo {
 
     try {
       // Remove cabeçalho data:image se existir, para garantir apenas o base64
-      const dadosImagem = imagemBase64.includes(',') 
-        ? imagemBase64.split(',')[1] 
+      const dadosImagem = imagemBase64.includes(',')
+        ? imagemBase64.split(',')[1]
         : imagemBase64;
 
       const prompt = `Analise este rótulo de produto. Extraia Nome, Marca e Tamanho/Peso. Responda apenas JSON.`;
@@ -56,8 +56,8 @@ export class ServicoIAGemini implements ServicoLeituraRotulo {
 
       if (response.text) {
         const dados = JSON.parse(response.text) as DadosProdutoExtraidos;
-        if (dados.description) dados.description = formatarTitulo(dados.description);
-        if (dados.brand) dados.brand = formatarTitulo(dados.brand);
+        if (dados.descricao) dados.descricao = formatarTitulo(dados.descricao);
+        if (dados.marca) dados.marca = formatarTitulo(dados.marca);
         return dados;
       }
       return null;
@@ -91,8 +91,8 @@ export class ServicoIAGemini implements ServicoLeituraRotulo {
 
       if (response.text) {
         const dados = JSON.parse(response.text) as DadosProdutoExtraidos;
-        if (dados.description) dados.description = formatarTitulo(dados.description);
-        if (dados.brand) dados.brand = formatarTitulo(dados.brand);
+        if (dados.descricao) dados.descricao = formatarTitulo(dados.descricao);
+        if (dados.marca) dados.marca = formatarTitulo(dados.marca);
         return dados;
       }
       return null;
