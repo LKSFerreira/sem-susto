@@ -25,7 +25,7 @@ import { CHAVE_STORAGE_CATALOGO, CHAVE_STORAGE_CARRINHO, CHAVE_STORAGE_HISTORICO
  * permitindo busca O(1) por código.
  */
 export class RepositorioProdutosLocalStorage implements RepositorioProdutos {
-  
+
   /**
    * Carrega o catálogo do localStorage.
    * 
@@ -68,7 +68,7 @@ export class RepositorioProdutosLocalStorage implements RepositorioProdutos {
 
   async salvar(produto: Produto): Promise<void> {
     const catalogo = this.carregarCatalogo();
-    catalogo[produto.gtin] = produto;
+    catalogo[produto.codigo_barras] = produto;
     this.salvarCatalogo(catalogo);
   }
 
@@ -86,7 +86,7 @@ export class RepositorioProdutosLocalStorage implements RepositorioProdutos {
  * preservar a ordem de inserção.
  */
 export class RepositorioCarrinhoLocalStorage implements RepositorioCarrinho {
-  
+
   /**
    * Carrega os itens do carrinho do localStorage.
    * 
@@ -122,44 +122,44 @@ export class RepositorioCarrinhoLocalStorage implements RepositorioCarrinho {
 
   async adicionarItem(item: ItemCarrinho): Promise<void> {
     const itens = this.carregarCarrinho();
-    
+
     // Verifica se o produto já existe no carrinho
     const indiceExistente = itens.findIndex(
-      existente => existente.gtin === item.gtin
+      existente => existente.codigo_barras === item.codigo_barras
     );
-    
+
     if (indiceExistente >= 0) {
       // Incrementa quantidade se já existe
-      itens[indiceExistente].quantity += item.quantity;
+      itens[indiceExistente].quantidade += item.quantidade;
     } else {
       // Adiciona novo item
       itens.push(item);
     }
-    
+
     this.salvarCarrinho(itens);
   }
 
   // Antigo: atualizarQuantidade(codigo, quantidade)
-  async atualizarQuantidade(gtin: string, quantity: number): Promise<void> {
+  async atualizarQuantidade(codigo_barras: string, quantity: number): Promise<void> {
     const itens = this.carregarCarrinho();
-    
-    const indice = itens.findIndex(item => item.gtin === gtin);
-    
+
+    const indice = itens.findIndex(item => item.codigo_barras === codigo_barras);
+
     if (indice >= 0) {
       if (quantity <= 0) {
         // Remove item se quantidade for zero ou negativa
         itens.splice(indice, 1);
       } else {
-        itens[indice].quantity = quantity;
+        itens[indice].quantidade = quantity;
       }
       this.salvarCarrinho(itens);
     }
   }
 
   // Antigo: removerItem(codigo)
-  async removerItem(gtin: string): Promise<void> {
+  async removerItem(codigo_barras: string): Promise<void> {
     const itens = this.carregarCarrinho();
-    const itensFiltrados = itens.filter(item => item.gtin !== gtin);
+    const itensFiltrados = itens.filter(item => item.codigo_barras !== codigo_barras);
     this.salvarCarrinho(itensFiltrados);
   }
 

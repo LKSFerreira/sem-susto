@@ -15,18 +15,18 @@ export const formatarMoeda = (valor: number): string => {
 export const formatarTitulo = (texto: string): string => {
   if (!texto) return '';
   const conectivos = [
-    'de', 'da', 'do', 'dos', 'das', 'com', 'e', 'em', 'para', 'por', 'sem', 
+    'de', 'da', 'do', 'dos', 'das', 'com', 'e', 'em', 'para', 'por', 'sem',
     'a', 'o', 'as', 'os', 'um', 'uns', 'uma', 'umas',
     'no', 'na', 'nos', 'nas', 'pelo', 'pela', 'pelos', 'pelas',
     'até', 'sob', 'sobre', 'ante', 'após', 'desde', 'entre'
   ];
-  
+
   return texto
     .toLowerCase()
     .split(' ')
     .map((palavra, index) => {
-       if (index > 0 && conectivos.includes(palavra)) return palavra;
-       return palavra.charAt(0).toUpperCase() + palavra.slice(1);
+      if (index > 0 && conectivos.includes(palavra)) return palavra;
+      return palavra.charAt(0).toUpperCase() + palavra.slice(1);
     })
     .join(' ');
 };
@@ -81,7 +81,7 @@ export const comprimirImagem = async (arquivo: File, qualidade: number = 0.7, la
       img.onload = () => {
         const elementoCanvas = document.createElement('canvas');
         const proporcao = larguraMax / img.width;
-        
+
         // Se a imagem for menor que o máximo, mantém o tamanho
         const novaLargura = img.width > larguraMax ? larguraMax : img.width;
         const novaAltura = img.width > larguraMax ? img.height * proporcao : img.height;
@@ -103,3 +103,13 @@ export const comprimirImagem = async (arquivo: File, qualidade: number = 0.7, la
     leitor.onerror = (erro) => reject(erro);
   });
 };
+
+/**
+ * Tenta extrair o tamanho/peso da string de descrição.
+ * Ex: "... 1KG" -> "1KG"
+ */
+export function extrairTamanho(descricao: string): string | null {
+  const regex = /\b(\d+(?:[.,]\d+)?\s*(?:KG|G|L|ML|MM|M))\b/i;
+  const match = descricao.match(regex);
+  return match ? match[1].toUpperCase() : null;
+}
