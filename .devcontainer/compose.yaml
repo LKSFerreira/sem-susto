@@ -23,7 +23,9 @@ services:
   # PROCESSOR - Python Worker para scripts pesados (Data Engineering)
   # ---------------------------------------------------------------------------
   processor:
-    image: python:3.12-alpine
+    build:
+      context: ../
+      dockerfile: .devcontainer/Dockerfile.python
     volumes:
       - ../:/app
     working_dir: /app
@@ -33,11 +35,11 @@ services:
   # ---------------------------------------------------------------------------
   # APP - Node.js com Vite (Build via Dockerfile)
   # ---------------------------------------------------------------------------
-  
+
   app:
     build:
       context: ../
-      dockerfile: .devcontainer/Dockerfile
+      dockerfile: .devcontainer/Dockerfile.node
     ports:
       - '5173:5173'
     volumes:

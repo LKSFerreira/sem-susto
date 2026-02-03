@@ -1,0 +1,17 @@
+FROM python:3.12-alpine
+
+WORKDIR /app
+
+# Instala dependências de sistema necessárias para compilação (se não houver wheel)
+# libpq é necessária para o psycopg2 em runtime
+RUN apk add --no-cache libpq postgresql-libs && \
+    apk add --no-cache --virtual .build-deps gcc musl-dev postgresql-dev
+
+# Copia e instala dependências via pyproject.toml
+COPY pyproject.toml .
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir . && \
+    apk del .build-deps
+
+# Comando padrão
+CMD ["tail", "-f", "/dev/null"]

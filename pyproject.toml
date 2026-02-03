@@ -1,0 +1,14 @@
+[project]
+name = "sem-susto-scripts"
+version = "0.1.0"
+description = "Scripts de automação e engenharia de dados do Sem Susto"
+requires-python = ">=3.12"
+dependencies = [
+    "pandas",
+    "psycopg2-binary",
+    "python-dotenv",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
