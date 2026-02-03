@@ -94,29 +94,26 @@
 - [x] **0.6.5.2** Implementar regras de padronização de Tamanho (Regex para unificar L, ml, kg, g)
 - [x] **0.6.5.3** Implementar regras de padronização de Descrição (Title Case, remover unidades redundantes)
 - [x] **0.6.5.4** Gerar dataset limpo `produtos_higienizados.csv`
-- [ ] **0.6.5.5** Refatorar serviços do Frontend para usar as mesmas regras de padronização
+- [x] **0.6.5.5** Refatorar serviços do Frontend para usar as mesmas regras de padronização
 
 ---
 
-## Fase 0.7: Planejamento Técnico do Banco de Dados 📐 ✅
-> **Objetivo:** Definir arquitetura de dados antes de criar infraestrutura
-> **Duração:** 1 dia
+## Fase 0.7: Banco de Dados Local (PostgreSQL) � 🚧
+> **Objetivo:** Persistir dados no Postgres rodando no Docker, saindo do LocalStorage/JSON.
+> **Duração:** 1-2 dias
 
-- [ ] **0.7.1** Analisar estrutura do CSV `produtos_brasil_v1.csv` (31k produtos)
-- [ ] **0.7.2** Definir schema da tabela `produtos` (colunas vs JSONB) — Híbrido escolhido
-- [ ] **0.7.3** Decidir estratégia de importação (bulk insert vs streaming) — Bulk Insert
-- [ ] **0.7.4** Documentar modelo de dados final — `infra/migrations/001_criar_tabela_produtos.sql`
-- [ ] **0.7.5** Definir índices necessários (GTIN, busca textual) — `infra/migrations/002_criar_indices.sql`
+- [ ] **0.7.1** Criar estrutura de Migrations (`infra/migrations/*.sql`) e DDL da tabela `produtos`
+- [ ] **0.7.2** Criar DDL da tabela `carrinho` e `itens_carrinho` (preparando persistência)
+- [ ] **0.7.3** Criar script Python `scripts/init_db.py` para rodar migrations e popular dados
+- [ ] **0.7.4** Importar `produtos_higienizados.json` para o Postgres Local (Bulk Insert)
+- [ ] **0.7.5** Validar dados no banco (conectando via DBeaver/Adminer ou CLI)
 
-**Critério de sucesso:** Documento de modelagem aprovado. ✅
-
+**Critério de sucesso:** Banco populado com 30k produtos e acessível localmente.
 
 > [!NOTE]
-> **Decisão Técnica: Armazenamento de Imagens (MVP)**
-> Para evitar complexidade de upload de arquivos no MVP, adotou-se uma **Estratégia Híbrida**:
-> - O campo `imagem` (string) aceita tanto URLs remotas (`https://...`) quanto Base64 (`data:image/...`).
-> - Fotos tiradas pelo usuário são comprimidas no client-side e salvas como Base64 no `localStorage`.
-> - Risco aceito: Limite de armazenamento do browser (5-10MB). Solução temporária até a integração com Storage na Nuvem (Fase 2).
+> **Estratégia Local First:**
+> Validamos tudo no container Postgres do Docker. A migração para Cloud (Supabase) será apenas um "dump & restore" futuro.
+> Mantemos os arquivos Imutáveis `.sql`.
 
 ---
 
