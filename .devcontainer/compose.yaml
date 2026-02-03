@@ -19,20 +19,20 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
 
-  # # ---------------------------------------------------------------------------
-  # # PROCESSOR - Python Worker para scripts pesados (Data Engineering)
-  # # ---------------------------------------------------------------------------
-  # processor:
-  #   image: python:3.12-alpine
-  #   volumes:
-  #     - ../:/app
-  #   working_dir: /app
-  #   # Mantém o container vivo para rodarmos comandos manuais ou roda o script direto
-  #   command: tail -f /dev/null
+  # ---------------------------------------------------------------------------
+  # PROCESSOR - Python Worker para scripts pesados (Data Engineering)
+  # ---------------------------------------------------------------------------
+  processor:
+    image: python:3.12-alpine
+    volumes:
+      - ../:/app
+    working_dir: /app
+    # Mantém o container vivo para rodarmos comandos manuais ou roda o script direto
+    command: tail -f /dev/null
 
-  # # ---------------------------------------------------------------------------
-  # # APP - Node.js com Vite (Build via Dockerfile)
-  # # ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
+  # APP - Node.js com Vite (Build via Dockerfile)
+  # ---------------------------------------------------------------------------
   
   app:
     build:
