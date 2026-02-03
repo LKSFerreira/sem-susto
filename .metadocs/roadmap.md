@@ -86,6 +86,18 @@
 
 ---
 
+## Fase 0.6.5: Débitos Técnicos e Higienização de Dados 🧹
+> **Objetivo:** Garantir qualidade e padronização dos dados antes de popular o banco.
+> **Contexto:** Padronização de unidades (L, ml), formatação de nomes e limpeza do CSV bruto.
+
+- [x] **0.6.5.1** Criar script Python para higienização do CSV `produtos_brasil_v1.csv` (Campos: descricao, marca, tamanho, preco)
+- [x] **0.6.5.2** Implementar regras de padronização de Tamanho (Regex para unificar L, ml, kg, g)
+- [x] **0.6.5.3** Implementar regras de padronização de Descrição (Title Case, remover unidades redundantes)
+- [x] **0.6.5.4** Gerar dataset limpo `produtos_higienizados.csv`
+- [ ] **0.6.5.5** Refatorar serviços do Frontend para usar as mesmas regras de padronização
+
+---
+
 ## Fase 0.7: Planejamento Técnico do Banco de Dados 📐 ✅
 > **Objetivo:** Definir arquitetura de dados antes de criar infraestrutura
 > **Duração:** 1 dia
@@ -97,6 +109,7 @@
 - [ ] **0.7.5** Definir índices necessários (GTIN, busca textual) — `infra/migrations/002_criar_indices.sql`
 
 **Critério de sucesso:** Documento de modelagem aprovado. ✅
+
 
 > [!NOTE]
 > **Decisão Técnica: Armazenamento de Imagens (MVP)**
