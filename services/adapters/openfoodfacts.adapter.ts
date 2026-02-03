@@ -1,5 +1,5 @@
 import { Produto } from '../../types';
-import { formatarTitulo, extrairTamanho } from '../utilitarios';
+import { formatarTitulo, extrairTamanho, construirUrlImagemOFF } from '../utilitarios';
 
 export interface ProdutoOFFResponse {
     code: string;
@@ -31,15 +31,20 @@ export class OpenFoodFactsAdapter {
         const marcaBruta = p.brands || '';
         const marca = marcaBruta ? formatarTitulo(marcaBruta) : 'Genérica';
 
-        const tamanho = p.quantity || extrairTamanho(descricao) || '';
+        const tamanho = p.quantity ? extrairTamanho(p.quantity) || p.quantity : extrairTamanho(descricao) || 'Sem Tamanho';
 
         // Preferência por imagem display em pt, ou geral, ou url direta
-        let imagem = p.image_url || p.image_front_url;
+        let imagem = p.image_front_url || p.image_url;
 
-        // Se a imagem selecionada estiver disponível
+        // Se não tem URL direta, tenta construir a partir do objeto selected
         if (!imagem && p.selected_images?.front?.display) {
             // Tenta "pt" primeiro, senão pega a primeira disponível
             imagem = p.selected_images.front.display['pt'] || Object.values(p.selected_images.front.display)[0];
+        }
+
+        // Último caso: tenta construir a URL baseada no código (tentativa padronizada)
+        if (!imagem) {
+            imagem = construirUrlImagemOFF(dados.code) ?? undefined;
         }
 
         return {
