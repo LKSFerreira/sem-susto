@@ -174,17 +174,17 @@
 
 ---
 
-## Fase 1: Deploy Funcional na Vercel 🌐
+## Fase 1: Deploy Funcional na Vercel ✅
 
 > **Objetivo:** MVP online acessível publicamente
 > **Duração:** 1-2 dias
 
-- [ ] **1.1** Verificar build de produção (`docker compose exec app npm run build`)
-- [ ] **1.2** Configurar variáveis de ambiente na Vercel (API Gemini)
-- [ ] **1.3** Deploy e testar no celular
-- [ ] **1.4** Ajustar responsividade se necessário
+- [x] **1.1** Verificar build de produção (`docker compose exec app npm run build`)
+- [x] **1.2** Configurar variáveis de ambiente na Vercel (API Gemini/Groq)
+- [x] **1.3** Deploy e testar no celular
+- [x] **1.4** Configurar domínio customizado: **https://www.semsusto.app**
 
-**Critério de sucesso:** Acessar a URL da Vercel no celular e completar uma compra.
+**Critério de sucesso:** ✅ App acessível em https://www.semsusto.app
 
 > [!NOTE]
 > Nesta fase os dados ficam apenas no navegador do usuário.
