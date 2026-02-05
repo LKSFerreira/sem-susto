@@ -27,7 +27,7 @@ from urllib.parse import urlparse
 # =============================================================================
 # Altere para True se quiser DROPAR todas as tabelas e recomeçar do zero.
 # ⚠️ CUIDADO: Isso apaga TODOS os dados do banco!
-RESETAR_BANCO = True
+RESETAR_BANCO = False
 
 # =============================================================================
 # CONFIGURAÇÃO DE CONEXÃO
