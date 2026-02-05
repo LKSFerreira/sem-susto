@@ -6,7 +6,7 @@
 
 import { Produto } from '../types';
 import { padronizarDadosProduto } from './ia';
-import { formatarTitulo } from './utilitarios';
+import { formatarTitulo, extrairTamanho } from './utilitarios';
 import { CosmosAdapter } from './adapters/cosmos.adapter';
 
 // Em desenvolvimento, usa o proxy configurado no vite.config.ts para evitar CORS.
@@ -94,7 +94,10 @@ export async function buscarProdutoCosmos(gtin: string): Promise<Produto | null>
           // Atualiza/Limpa os dados com o retorno da IA
           if (dadosPadronizados.descricao) produto.descricao = dadosPadronizados.descricao;
           if (dadosPadronizados.marca && dadosPadronizados.marca !== 'Genérica') produto.marca = dadosPadronizados.marca;
-          if (dadosPadronizados.tamanho) produto.tamanho = dadosPadronizados.tamanho.toUpperCase();
+          // Padroniza tamanho conforme SI (kg, g, mg, L, ml, m, cm, mm)
+          if (dadosPadronizados.tamanho) {
+            produto.tamanho = extrairTamanho(dadosPadronizados.tamanho) || dadosPadronizados.tamanho;
+          }
         }
       } catch (err) {
         console.warn('[Cosmos] Falha na padronização IA (usando dados originais):', err);

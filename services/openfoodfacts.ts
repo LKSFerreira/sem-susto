@@ -1,6 +1,7 @@
 import { Produto } from '../types';
 import { OpenFoodFactsAdapter, ProdutoOFFResponse } from './adapters/openfoodfacts.adapter';
 import { padronizarDadosProduto } from './ia';
+import { extrairTamanho } from './utilitarios';
 
 const OFF_API_URL = 'https://world.openfoodfacts.org/api/v2/product';
 
@@ -45,7 +46,10 @@ export async function buscarProdutoOFF(gtin: string): Promise<Produto | null> {
                     if (dadosPadronizados.descricao) produto.descricao = dadosPadronizados.descricao;
                     // Só substitui a marca se a IA retornou algo útil e não "Genérica"
                     if (dadosPadronizados.marca && dadosPadronizados.marca !== 'Genérica') produto.marca = dadosPadronizados.marca;
-                    if (dadosPadronizados.tamanho) produto.tamanho = dadosPadronizados.tamanho.toUpperCase();
+                    // Padroniza tamanho conforme SI (kg, g, mg, L, ml, m, cm, mm)
+                    if (dadosPadronizados.tamanho) {
+                        produto.tamanho = extrairTamanho(dadosPadronizados.tamanho) || dadosPadronizados.tamanho;
+                    }
                 }
             } catch (err) {
                 console.warn('[OFF] Falha na padronização IA (usando dados originais):', err);
