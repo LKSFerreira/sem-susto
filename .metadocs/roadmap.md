@@ -98,22 +98,29 @@
 
 ---
 
-## Fase 0.7: Banco de Dados Local (PostgreSQL) � 🚧
+## Fase 0.7: Banco de Dados Local (PostgreSQL) 🚧
 > **Objetivo:** Persistir dados no Postgres rodando no Docker, saindo do LocalStorage/JSON.
 > **Duração:** 1-2 dias
 
-- [ ] **0.7.1** Criar estrutura de Migrations (`infra/migrations/*.sql`) e DDL da tabela `produtos`
+- [x] **0.7.1** Criar estrutura de Migrations (`infra/migrations/*.sql`) e DDL da tabela `produtos`
 - [ ] **0.7.2** Criar DDL da tabela `carrinho` e `itens_carrinho` (preparando persistência)
-- [ ] **0.7.3** Criar script Python `scripts/init_db.py` para rodar migrations e popular dados
-- [ ] **0.7.4** Importar `produtos_higienizados.json` para o Postgres Local (Bulk Insert)
+- [x] **0.7.3** Criar script Python `scripts/init_db.py` para rodar migrations e popular dados
+- [x] **0.7.4** Importar `produtos_higienizados.json` para o Postgres Local (Bulk Insert)
 - [ ] **0.7.5** Validar dados no banco (conectando via DBeaver/Adminer ou CLI)
+- [ ] **0.7.6** Criar API REST (Node/Express ou FastAPI) para expor o repositório PostgreSQL ao frontend
 
-**Critério de sucesso:** Banco populado com 30k produtos e acessível localmente.
+**Critério de sucesso:** Banco populado com 30k produtos e acessível via API.
 
 > [!NOTE]
 > **Estratégia Local First:**
 > Validamos tudo no container Postgres do Docker. A migração para Cloud (Supabase) será apenas um "dump & restore" futuro.
 > Mantemos os arquivos Imutáveis `.sql`.
+
+> [!IMPORTANT]
+> **Arquitetura de Armazenamento:**
+> - **Banco de Dados (PostgreSQL/Supabase):** Produtos (catálogo compartilhado)
+> - **localStorage:** Apenas o carrinho do usuário atual (temporário, limita ao dispositivo)
+> - **Imagens:** URLs externas quando disponíveis, Base64 comprimido (400px, 70% qualidade) para fotos manuais
 
 ---
 
@@ -237,6 +244,11 @@
 - [ ] **4.3** PWA (instalável, offline básico)
 - [ ] **4.4** Pesquisa de produtos
 - [ ] **4.5** Editar/Excluir produtos do catálogo
+
+### Insights de Consumo (Requer Autenticação)
+- [ ] **4.6** Indicador de variação de preço: seta verde ↓ para itens mais baratos vs última compra, seta vermelha ↑ para mais caros (com % de variação)
+- [ ] **4.7** Dashboard de consumo mensal
+- [ ] **4.8** Recomendações baseadas no histórico
 
 ---
 
