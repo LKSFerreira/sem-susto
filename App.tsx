@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Produto, ItemCarrinho, TelaApp } from './types';
+import { Produto, ItemCarrinho, ItemCarrinhoExpandido, TelaApp } from './types';
 import { IMAGEM_PADRAO } from './constants';
 import { formatarMoeda } from './services/utilitarios';
 import { ScannerBarras } from './components/ScannerBarras';
@@ -22,8 +22,10 @@ export default function App() {
   // --- Estados ---
   const [telaAtual, setTelaAtual] = useState<TelaApp>('DASHBOARD');
 
-  // Catálogo agora é carregado do repositório
+  // Catálogo: produtos completos (descricao, marca, imagem, preco...)
   const [catalogo, setCatalogo] = useState<Record<string, Produto>>({});
+
+  // Carrinho: apenas referências (codigo_barras + quantidade)
   const [carrinho, setCarrinho] = useState<ItemCarrinho[]>([]);
 
   // Flag para indicar se os dados foram carregados
@@ -44,9 +46,6 @@ export default function App() {
 
   /**
    * Carrega dados do repositório ao iniciar o app.
-   * 
-   * Como os repositórios retornam Promises, usamos async/await.
-   * O estado `carregado` evita múltiplos carregamentos.
    */
   useEffect(() => {
     const carregarDados = async () => {
@@ -59,169 +58,170 @@ export default function App() {
         });
         setCatalogo(catalogoCarregado);
 
-        // Carrega carrinho
+        // Carrega carrinho (agora são apenas referências)
         const itensCarrinho = await repositorioCarrinho.obterItens();
         setCarrinho(itensCarrinho);
 
         setCarregado(true);
       } catch (erro) {
         console.error('Erro ao carregar dados:', erro);
-        setCarregado(true); // Marca como carregado mesmo com erro para não travar a UI
+        setCarregado(true);
       }
     };
 
     carregarDados();
   }, [repositorioProdutos, repositorioCarrinho]);
 
-  // --- Lógica de Negócio ---
-
-  const calcularTotal = useMemo(() => {
-    return carrinho.reduce((acc, item) => acc + ((item.preco_estimado || 0) * item.quantidade), 0);
-  }, [carrinho]);
-
-
+  // --- Funções de Join (Carrinho + Catálogo) ---
 
   /**
-   * Adiciona um produto ao carrinho.
-   * 
-   * Se o produto já estiver no carrinho, incrementa a quantidade.
-   * Persiste a alteração no repositório.
+   * Expande o carrinho fazendo join com o catálogo.
+   * Transforma referências em objetos completos para exibição na UI.
    */
-  const adicionarAoCarrinho = useCallback(async (produto: Produto) => {
-    const novoItem: ItemCarrinho = {
-      ...produto,
-      quantidade: 1,
-      uuid: Date.now().toString()
-    };
+  const carrinhoExpandido = useMemo((): ItemCarrinhoExpandido[] => {
+    return carrinho
+      .map(item => {
+        const produto = catalogo[item.codigo_barras];
+        if (!produto) return null; // Produto não encontrado no catálogo
+        return {
+          ...produto,
+          quantidade: item.quantidade
+        };
+      })
+      .filter((item): item is ItemCarrinhoExpandido => item !== null);
+  }, [carrinho, catalogo]);
 
+  /**
+   * Calcula o total do carrinho usando os dados expandidos.
+   */
+  const calcularTotal = useMemo(() => {
+    return carrinhoExpandido.reduce(
+      (acc, item) => acc + ((item.preco_estimado || 0) * item.quantidade),
+      0
+    );
+  }, [carrinhoExpandido]);
+
+  // --- Lógica de Negócio ---
+
+  /**
+   * Adiciona um produto ao carrinho (apenas referência).
+   * O produto já deve estar no catálogo.
+   */
+  const adicionarAoCarrinho = useCallback(async (codigo_barras: string) => {
     // Atualiza estado local primeiro (UI responsiva)
     setCarrinho(prev => {
-      const index = prev.findIndex(item => item.codigo_barras === produto.codigo_barras);
+      const index = prev.findIndex(item => item.codigo_barras === codigo_barras);
       if (index >= 0) {
         const novoCarrinho = [...prev];
         novoCarrinho[index].quantidade += 1;
         return novoCarrinho;
       }
-      return [...prev, novoItem];
+      return [...prev, { codigo_barras, quantidade: 1 }];
     });
 
     // Persiste no repositório
     try {
-      await repositorioCarrinho.adicionarItem(novoItem);
+      await repositorioCarrinho.adicionarItem(codigo_barras, 1);
     } catch (erro) {
       console.error('Erro ao adicionar item ao carrinho:', erro);
     }
   }, [repositorioCarrinho]);
 
   /**
-   * Atualiza os dados de um item no carrinho (preço, nome, foto)
-   * SEM alterar a quantidade.
-   */
-  const atualizarProdutoNoCarrinho = useCallback(async (produto: Produto) => {
-    // Atualiza estado local
-    setCarrinho(prev => {
-      const index = prev.findIndex(item => item.codigo_barras === produto.codigo_barras);
-      if (index >= 0) {
-        const novoCarrinho = [...prev];
-        // Mantém a quantidade e uuid antigos, atualiza o resto
-        novoCarrinho[index] = {
-          ...novoCarrinho[index],
-          ...produto
-        };
-        return novoCarrinho;
-      }
-      return prev;
-    });
-
-    // Como o repositório de carrinho salva a lista toda ou itens individuais,
-    // e o metodo 'adicionarItem' soma quantidade, precisamos de lógica específica.
-    // Simplificação MVP: Salva o carrinho todo novamente.
-    // Em produção ideal: repositorioCarrinho.atualizarItem(produto)
-
-    // Atualiza catálogo também
-    setCatalogo(prev => ({ ...prev, [produto.codigo_barras]: produto }));
-    await repositorioProdutos.salvar(produto);
-
-    // Pequeno hack: para garantir persistência correta no carrinho,
-    // vamos recarregar o estado atual e salvar tudo.
-    // (Melhor seria ter um método 'atualizarItem' no repositório)
-    const carrinhoAtual = await repositorioCarrinho.obterItens();
-    const index = carrinhoAtual.findIndex(i => i.codigo_barras === produto.codigo_barras);
-    if (index >= 0) {
-      carrinhoAtual[index] = { ...carrinhoAtual[index], ...produto };
-      await repositorioCarrinho.salvarTodos(carrinhoAtual);
-    }
-  }, [repositorioCarrinho, repositorioProdutos]);
-
-  /**
-   * Salva um novo produto no catálogo e adiciona ao carrinho.
+   * Salva produto no catálogo (localStorage + banco de dados).
+   * Chamado após encontrar nas APIs ou após edição pelo usuário.
    */
   const salvarProdutoNoCatalogo = useCallback(async (produto: Produto) => {
-    // 1. Salva no Catálogo (sempre)
+    // Atualiza catálogo local
     setCatalogo(prev => ({ ...prev, [produto.codigo_barras]: produto }));
 
+    // Persiste no repositório
     try {
       await repositorioProdutos.salvar(produto);
+      console.log(`💾 [CATÁLOGO] Produto salvo: ${produto.codigo_barras}`);
     } catch (erro) {
       console.error('Erro ao salvar produto:', erro);
     }
+  }, [repositorioProdutos]);
 
-    // 2. Decide: Adicionar (+1) ou Atualizar (Edição)
-    if (modoEdicao) {
-      await atualizarProdutoNoCarrinho(produto);
-    } else {
-      await adicionarAoCarrinho(produto);
+  /**
+   * Callback do formulário "Salvar Produto".
+   * Atualiza o catálogo e adiciona/atualiza no carrinho.
+   */
+  const aoSalvarProduto = useCallback(async (produto: Produto) => {
+    // 1. Salva no catálogo (sempre)
+    await salvarProdutoNoCatalogo(produto);
+
+    // 2. Decide: Adicionar (+1) ou apenas atualizar dados (Edição)
+    if (!modoEdicao) {
+      await adicionarAoCarrinho(produto.codigo_barras);
     }
+    // Se for edição, o produto já está no carrinho, só atualizou o catálogo
 
     setTelaAtual('DASHBOARD');
     setCodigoLido(null);
-    setModoEdicao(false); // Reset
-  }, [repositorioProdutos, adicionarAoCarrinho, atualizarProdutoNoCarrinho, modoEdicao]);
+    setModoEdicao(false);
+  }, [salvarProdutoNoCatalogo, adicionarAoCarrinho, modoEdicao]);
 
   /**
    * Callback quando um código de barras é lido.
    * 
    * Ordem de Busca:
-   * 1. Catálogo Local (Offline/Cache)
-   * 2. OpenFoodFacts (Gratuita/Colaborativa)
-   * 3. API Cosmos (Comercial - Fallback)
-   * 4. Formulário Manual
+   * 1. Catálogo LocalStorage (Cache do usuário)
+   * 2. TODO: Banco de Dados PostgreSQL
+   * 3. OpenFoodFacts (Gratuita/Colaborativa)
+   * 4. API Cosmos (Comercial - Fallback)
+   * 5. Formulário Manual
    */
   const aoLerCodigo = useCallback(async (codigo_barras: string) => {
     setCodigoLido(codigo_barras);
-    setModoEdicao(false); // Scanner sempre é "Novo" ou "Incremento"
+    setModoEdicao(false);
     setDadosPrePreenchidos(null);
 
     console.log(`\n🔍 [BUSCA] Iniciando busca para GTIN: ${codigo_barras}`);
 
-    // 1. Verifica cache local
+    // 1. Verifica cache local (catálogo localStorage)
     if (catalogo[codigo_barras]) {
       console.log(`✅ [ORIGEM: CACHE LOCAL] Produto encontrado no catálogo local`);
       console.log(`   📦 Dados:`, catalogo[codigo_barras]);
-      adicionarAoCarrinho(catalogo[codigo_barras]);
+      await adicionarAoCarrinho(codigo_barras);
       setTelaAtual('DASHBOARD');
       setCodigoLido(null);
       return;
     }
     console.log(`❌ [CACHE LOCAL] Não encontrado`);
 
-    // 2. Consulta OpenFoodFacts (Prioridade API)
+    // 2. TODO: Buscar no Banco de Dados PostgreSQL (endpoint ainda não existe)
+
+    // 3. Consulta OpenFoodFacts (Prioridade API)
     console.log(`🌐 [BUSCANDO] OpenFoodFacts...`);
     let produtoEncontrado = await buscarProdutoOFF(codigo_barras);
 
     if (produtoEncontrado) {
       console.log(`✅ [ORIGEM: OPENFOODFACTS] Produto encontrado!`);
       console.log(`   📦 Dados:`, produtoEncontrado);
+
+      // Salva imediatamente no catálogo com preço 0
+      produtoEncontrado.preco_estimado = 0;
+      await salvarProdutoNoCatalogo(produtoEncontrado);
+      console.log(`💾 [CACHE] Produto salvo no catálogo local (com preço R$ 0,00)`);
+
     } else {
       console.log(`❌ [OPENFOODFACTS] Não encontrado`);
 
-      // 3. Consulta API Cosmos (Fallback)
+      // 4. Consulta API Cosmos (Fallback)
       console.log(`🌐 [BUSCANDO] Cosmos API...`);
       produtoEncontrado = await buscarProdutoCosmos(codigo_barras);
 
       if (produtoEncontrado) {
         console.log(`✅ [ORIGEM: COSMOS] Produto encontrado!`);
         console.log(`   📦 Dados:`, produtoEncontrado);
+
+        // Salva imediatamente no catálogo com preço 0
+        produtoEncontrado.preco_estimado = 0;
+        await salvarProdutoNoCatalogo(produtoEncontrado);
+        console.log(`💾 [CACHE] Produto salvo no catálogo local (com preço R$ 0,00)`);
+
       } else {
         console.log(`❌ [COSMOS] Não encontrado`);
         console.log(`📝 [ORIGEM: CADASTRO MANUAL] Usuário precisará preencher`);
@@ -232,23 +232,20 @@ export default function App() {
       setDadosPrePreenchidos(produtoEncontrado);
     }
 
-    // 4. Abre formulário (vazio ou preenchido)
+    // 5. Abre formulário (preenchido ou vazio)
     setTelaAtual('CADASTRO');
-  }, [catalogo, adicionarAoCarrinho]);
+  }, [catalogo, adicionarAoCarrinho, salvarProdutoNoCatalogo]);
 
   /**
    * Remove um item do carrinho.
    */
   const removerItem = useCallback(async (codigo_barras: string) => {
-    // Feedback tátil
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
       navigator.vibrate(50);
     }
 
-    // Atualiza estado local
     setCarrinho(prev => prev.filter(item => item.codigo_barras !== codigo_barras));
 
-    // Persiste no repositório
     try {
       await repositorioCarrinho.removerItem(codigo_barras);
     } catch (erro) {
@@ -258,13 +255,10 @@ export default function App() {
 
   /**
    * Altera a quantidade de um item no carrinho.
-   * 
-   * Se a quantidade chegar a zero, remove o item.
    */
   const alterarQuantidade = useCallback(async (codigo_barras: string, delta: number) => {
     let novaQuantidade = 0;
 
-    // Atualiza estado local
     setCarrinho(prev => {
       return prev.reduce((acc, item) => {
         if (item.codigo_barras === codigo_barras) {
@@ -273,7 +267,6 @@ export default function App() {
           if (novaQuantidade > 0) {
             acc.push({ ...item, quantidade: novaQuantidade });
           } else {
-            // Vibra ao remover
             if (typeof navigator !== 'undefined' && navigator.vibrate) {
               navigator.vibrate(50);
             }
@@ -285,7 +278,6 @@ export default function App() {
       }, [] as ItemCarrinho[]);
     });
 
-    // Persiste no repositório
     try {
       if (novaQuantidade > 0) {
         await repositorioCarrinho.atualizarQuantidade(codigo_barras, novaQuantidade);
@@ -300,84 +292,61 @@ export default function App() {
   /**
    * Abre a tela de edição para um item do carrinho.
    */
-  const aoEditarItem = useCallback((produto: Produto) => {
-    // Feedback tátil
+  const aoEditarItem = useCallback((item: ItemCarrinhoExpandido) => {
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
       navigator.vibrate(50);
     }
-    setCodigoLido(produto.codigo_barras);
-    setModoEdicao(true); // Ativa modo de edição
-    setDadosPrePreenchidos(null); // Garante que usa os dados do catálogo
+    setCodigoLido(item.codigo_barras);
+    setModoEdicao(true);
+    setDadosPrePreenchidos(null);
     setTelaAtual('CADASTRO');
   }, []);
 
   /**
-   * Executa a finalização da compra após confirmação do usuário.
+   * Executa a finalização da compra.
    */
   const executarFinalizacao = useCallback(async () => {
     setMostrarConfirmacaoFinalizar(false);
 
     try {
-      // 1. Cria objeto de compra
+      // Cria objeto de compra com snapshot dos itens expandidos
       const novaCompra = {
         id: crypto.randomUUID(),
         data: new Date().toISOString(),
-        items: [...carrinho],
+        itens: [...carrinhoExpandido], // Snapshot completo
         total: calcularTotal
       };
 
-      // 2. Salva no histórico
       await repositorioHistorico.salvar(novaCompra);
-
-      // 3. Limpa o carrinho
       await repositorioCarrinho.limpar();
       setCarrinho([]);
-
-      // 4. Feedback e Redirecionamento
-      setMostrarDoacao(true); // Sugere doação após "compra" 
+      setMostrarDoacao(true);
     } catch (erro) {
       console.error('Erro ao finalizar compra:', erro);
     }
-  }, [carrinho, calcularTotal, repositorioHistorico, repositorioCarrinho]);
+  }, [carrinhoExpandido, calcularTotal, repositorioHistorico, repositorioCarrinho]);
 
-  /**
-   * Abre modal de confirmação para finalizar compra.
-   */
   const solicitarFinalizacao = useCallback(() => {
     if (carrinho.length === 0) return;
-    // MODAL DESABILITADO (Pedido UX): Finaliza direto
-    // setMostrarConfirmacaoFinalizar(true);
     executarFinalizacao();
   }, [carrinho.length, executarFinalizacao]);
 
-
-  /**
-   * Abre modal de confirmação para esvaziar carrinho.
-   */
   const solicitarEsvaziamento = useCallback(() => {
     if (carrinho.length === 0) return;
     setMostrarConfirmacaoEsvaziar(true);
   }, [carrinho.length]);
 
-  /**
-   * Executa a limpeza do carrinho após confirmação do usuário.
-   */
   const executarEsvaziamento = useCallback(async () => {
     setMostrarConfirmacaoEsvaziar(false);
 
-    // Feedback tátil
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
       navigator.vibrate(50);
     }
 
-    // Atualiza estado local
     setCarrinho([]);
 
-    // Persiste no repositório
     try {
       await repositorioCarrinho.limpar();
-
-      // Abre modal de doação
       setMostrarDoacao(true);
     } catch (erro) {
       console.error('Erro ao limpar carrinho:', erro);
@@ -386,7 +355,6 @@ export default function App() {
 
   // --- Renderização ---
 
-  // Mostra loading enquanto carrega dados
   if (!carregado) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -444,7 +412,7 @@ export default function App() {
 
       {/* 2. Área Principal (Lista de Compras) */}
       <main className="flex-1 max-w-md mx-auto w-full p-4 pb-32">
-        {carrinho.length === 0 ? (
+        {carrinhoExpandido.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-gray-400">
             <i className="fas fa-shopping-basket text-6xl mb-4 text-gray-200"></i>
             <p>Seu carrinho está vazio.</p>
@@ -452,7 +420,7 @@ export default function App() {
           </div>
         ) : (
           <ul className="space-y-3">
-            {carrinho.map((item) => (
+            {carrinhoExpandido.map((item) => (
               <li
                 key={item.codigo_barras}
                 onClick={() => aoEditarItem(item)}
@@ -532,7 +500,7 @@ export default function App() {
         )}
       </main>
 
-      {/* 3. Rodapé Fixo (Totais e Ação Principal) */}
+      {/* 3. Rodapé Fixo */}
       <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-30 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
         <div className="max-w-md mx-auto p-4 flex flex-col gap-3">
 
@@ -565,8 +533,6 @@ export default function App() {
         </div>
       </footer>
 
-
-
       {/* Mobile Debugger (Apenas Dev) */}
       {import.meta.env.DEV && <DebugConsole />}
 
@@ -589,7 +555,7 @@ export default function App() {
       {telaAtual === 'CADASTRO' && codigoLido && (
         <FormularioProduto
           gtinInicial={codigoLido}
-          aoSalvar={salvarProdutoNoCatalogo}
+          aoSalvar={aoSalvarProduto}
           aoCancelar={() => {
             setTelaAtual('DASHBOARD');
             setCodigoLido(null);
@@ -631,7 +597,6 @@ export default function App() {
       {mostrarTutorial && (
         <ModalTutorial aoFechar={fecharTutorial} />
       )}
-
 
     </div>
   );
