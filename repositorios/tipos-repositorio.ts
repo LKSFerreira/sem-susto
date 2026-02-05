@@ -6,7 +6,7 @@
  * alterar os componentes que consomem esses dados.
  */
 
-import { Produto, ItemCarrinho, Compra } from '../types';
+import { Produto, ItemCarrinho, ItemCarrinhoExpandido, Compra } from '../types';
 
 /**
  * Contrato para operações de persistência de produtos.
@@ -21,7 +21,7 @@ export interface RepositorioProdutos {
    * :param gtin: Código de barras do produto (ex: "7891000100103")
    * :returns: Produto encontrado ou null se não existir
    */
-  buscarPorGTIN(gtin: string): Promise<Produto | null>; // Antigo: buscarPorCodigo
+  buscarPorGTIN(gtin: string): Promise<Produto | null>;
 
   /**
    * Lista todos os produtos cadastrados.
@@ -44,63 +44,52 @@ export interface RepositorioProdutos {
    * 
    * :param gtin: GTIN do produto a remover
    */
-  remover(gtin: string): Promise<void>; // Antigo: remover(codigo)
+  remover(gtin: string): Promise<void>;
 }
 
 /**
  * Contrato para operações de persistência do carrinho de compras.
  * 
- * O carrinho armazena itens temporários da compra atual,
- * com controle de quantidade por produto.
+ * O carrinho armazena apenas referências aos produtos (codigo_barras + quantidade).
+ * Os dados completos do produto ficam no catálogo.
  */
 export interface RepositorioCarrinho {
   /**
-   * Obtém todos os itens do carrinho atual.
+   * Obtém todos os itens do carrinho atual (apenas referências).
    * 
-   * :returns: Array com itens do carrinho
+   * :returns: Array com referências dos itens do carrinho
    */
   obterItens(): Promise<ItemCarrinho[]>;
 
   /**
    * Adiciona um item ao carrinho.
    * 
-   * Se o produto já estiver no carrinho, a implementação pode
-   * optar por incrementar a quantidade ou retornar erro.
+   * Se o produto já estiver no carrinho, incrementa a quantidade.
    * 
-   * :param item: Item a adicionar
+   * :param codigo_barras: GTIN do produto
+   * :param quantidade: Quantidade a adicionar (default: 1)
    */
-  adicionarItem(item: ItemCarrinho): Promise<void>;
+  adicionarItem(codigo_barras: string, quantidade?: number): Promise<void>;
 
   /**
    * Atualiza a quantidade de um item no carrinho.
    * 
-   * :param gtin: GTIN do produto
-   * :param quantity: Nova quantidade (deve ser > 0)
+   * :param codigo_barras: GTIN do produto
+   * :param quantidade: Nova quantidade (deve ser > 0)
    */
-  atualizarQuantidade(gtin: string, quantity: number): Promise<void>; // Antigo: codigo, quantidade
+  atualizarQuantidade(codigo_barras: string, quantidade: number): Promise<void>;
 
   /**
    * Remove um item do carrinho.
    * 
-   * :param gtin: GTIN do produto a remover
+   * :param codigo_barras: GTIN do produto a remover
    */
-  removerItem(gtin: string): Promise<void>; // Antigo: removerItem(codigo)
+  removerItem(codigo_barras: string): Promise<void>;
 
   /**
    * Limpa todo o carrinho.
-   * 
-   * Útil após finalizar uma compra.
    */
   limpar(): Promise<void>;
-
-  /**
-   * Salva o estado completo do carrinho.
-   * 
-   * Útil para persistir múltiplas alterações de uma vez.
-   * 
-   * :param itens: Array completo de itens para salvar
-   */
-  salvarTodos(itens: ItemCarrinho[]): Promise<void>;
 }
 
 /**
@@ -110,14 +99,14 @@ export interface RepositorioHistorico {
   /**
    * Salva uma nova compra no histórico.
    * 
-   * @param compra Objeto da compra finalizada
+   * :param compra: Objeto da compra finalizada (com snapshot dos itens)
    */
   salvar(compra: Compra): Promise<void>;
 
   /**
    * Lista todas as compras realizadas.
    * 
-   * @returns Lista de compras ordenadas (geralmente por data)
+   * :returns: Lista de compras ordenadas (geralmente por data)
    */
   listarTodas(): Promise<Compra[]>;
 }
