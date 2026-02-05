@@ -5,13 +5,11 @@
  * armazenados no navegador do usuário e persistem entre sessões,
  * mas são perdidos se o usuário limpar o cache.
  * 
- * **Exemplo:**
+ * **Arquitetura:**
+ * - Catálogo: Produtos completos (descricao, marca, imagem, preco...)
+ * - Carrinho: Apenas referências (codigo_barras + quantidade)
  * 
- * .. code-block:: typescript
- * 
- *     const repositorioProdutos = new RepositorioProdutosLocalStorage();
- *     await repositorioProdutos.salvar({ gtin: "123", description: "Leite", ... });
- *     const produto = await repositorioProdutos.buscarPorGTIN("123");
+ * Para exibir o carrinho na UI, faz join com o catálogo.
  */
 
 import { Produto, ItemCarrinho, Compra } from '../types';
@@ -28,8 +26,6 @@ export class RepositorioProdutosLocalStorage implements RepositorioProdutos {
 
   /**
    * Carrega o catálogo do localStorage.
-   * 
-   * :returns: Objeto com produtos indexados por GTIN
    */
   private carregarCatalogo(): Record<string, Produto> {
     try {
@@ -43,15 +39,12 @@ export class RepositorioProdutosLocalStorage implements RepositorioProdutos {
 
   /**
    * Salva o catálogo no localStorage.
-   * 
-   * :param catalogo: Objeto com produtos a salvar
    */
   private salvarCatalogo(catalogo: Record<string, Produto>): void {
     try {
       localStorage.setItem(CHAVE_STORAGE_CATALOGO, JSON.stringify(catalogo));
     } catch (erro) {
       console.error('Erro ao salvar catálogo no localStorage:', erro);
-      // Pode acontecer se exceder a cota de storage (geralmente 5-10MB)
       throw new Error('Falha ao salvar produto. Verifique o espaço de armazenamento.');
     }
   }
@@ -82,15 +75,13 @@ export class RepositorioProdutosLocalStorage implements RepositorioProdutos {
 /**
  * Implementação do repositório de carrinho usando localStorage.
  * 
- * O carrinho é armazenado como um array de itens, permitindo
- * preservar a ordem de inserção.
+ * O carrinho armazena apenas referências: { codigo_barras, quantidade }
+ * Os dados completos do produto ficam no catálogo (sem duplicação).
  */
 export class RepositorioCarrinhoLocalStorage implements RepositorioCarrinho {
 
   /**
    * Carrega os itens do carrinho do localStorage.
-   * 
-   * :returns: Array de itens do carrinho
    */
   private carregarCarrinho(): ItemCarrinho[] {
     try {
@@ -104,8 +95,6 @@ export class RepositorioCarrinhoLocalStorage implements RepositorioCarrinho {
 
   /**
    * Salva os itens do carrinho no localStorage.
-   * 
-   * :param itens: Array de itens a salvar
    */
   private salvarCarrinho(itens: ItemCarrinho[]): void {
     try {
@@ -120,43 +109,40 @@ export class RepositorioCarrinhoLocalStorage implements RepositorioCarrinho {
     return this.carregarCarrinho();
   }
 
-  async adicionarItem(item: ItemCarrinho): Promise<void> {
+  async adicionarItem(codigo_barras: string, quantidade: number = 1): Promise<void> {
     const itens = this.carregarCarrinho();
 
     // Verifica se o produto já existe no carrinho
     const indiceExistente = itens.findIndex(
-      existente => existente.codigo_barras === item.codigo_barras
+      item => item.codigo_barras === codigo_barras
     );
 
     if (indiceExistente >= 0) {
       // Incrementa quantidade se já existe
-      itens[indiceExistente].quantidade += item.quantidade;
+      itens[indiceExistente].quantidade += quantidade;
     } else {
-      // Adiciona novo item
-      itens.push(item);
+      // Adiciona nova referência
+      itens.push({ codigo_barras, quantidade });
     }
 
     this.salvarCarrinho(itens);
   }
 
-  // Antigo: atualizarQuantidade(codigo, quantidade)
-  async atualizarQuantidade(codigo_barras: string, quantity: number): Promise<void> {
+  async atualizarQuantidade(codigo_barras: string, quantidade: number): Promise<void> {
     const itens = this.carregarCarrinho();
-
     const indice = itens.findIndex(item => item.codigo_barras === codigo_barras);
 
     if (indice >= 0) {
-      if (quantity <= 0) {
+      if (quantidade <= 0) {
         // Remove item se quantidade for zero ou negativa
         itens.splice(indice, 1);
       } else {
-        itens[indice].quantidade = quantity;
+        itens[indice].quantidade = quantidade;
       }
       this.salvarCarrinho(itens);
     }
   }
 
-  // Antigo: removerItem(codigo)
   async removerItem(codigo_barras: string): Promise<void> {
     const itens = this.carregarCarrinho();
     const itensFiltrados = itens.filter(item => item.codigo_barras !== codigo_barras);
@@ -165,10 +151,6 @@ export class RepositorioCarrinhoLocalStorage implements RepositorioCarrinho {
 
   async limpar(): Promise<void> {
     this.salvarCarrinho([]);
-  }
-
-  async salvarTodos(itens: ItemCarrinho[]): Promise<void> {
-    this.salvarCarrinho(itens);
   }
 }
 
