@@ -11,10 +11,23 @@ export interface Produto {
   imagem?: string;
 }
 
-// Extensão do produto para o carrinho (adiciona quantidade)
-export interface ItemCarrinho extends Produto {
+/**
+ * Item do carrinho armazena apenas referência ao produto.
+ * Os dados completos do produto ficam no catálogo (sem duplicação).
+ * 
+ * Para exibir na UI, faz join com o catálogo usando `codigo_barras`.
+ */
+export interface ItemCarrinho {
+  codigo_barras: string;
   quantidade: number;
-  uuid: string;
+}
+
+/**
+ * Item do carrinho expandido para exibição na UI.
+ * Resultado do join entre ItemCarrinho e Produto do catálogo.
+ */
+export interface ItemCarrinhoExpandido extends Produto {
+  quantidade: number;
 }
 
 // Estados possíveis da tela da aplicação
@@ -29,6 +42,6 @@ export interface ConfiguracaoApp {
 export interface Compra {
   id: string;
   data: string; // ISO String
-  itens: ItemCarrinho[];
+  itens: ItemCarrinhoExpandido[]; // Snapshot dos itens no momento da compra
   total: number;
 }
