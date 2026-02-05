@@ -192,20 +192,40 @@ export default function App() {
     setModoEdicao(false); // Scanner sempre é "Novo" ou "Incremento"
     setDadosPrePreenchidos(null);
 
+    console.log(`\n🔍 [BUSCA] Iniciando busca para GTIN: ${codigo_barras}`);
+
     // 1. Verifica cache local
     if (catalogo[codigo_barras]) {
+      console.log(`✅ [ORIGEM: CACHE LOCAL] Produto encontrado no catálogo local`);
+      console.log(`   📦 Dados:`, catalogo[codigo_barras]);
       adicionarAoCarrinho(catalogo[codigo_barras]);
       setTelaAtual('DASHBOARD');
       setCodigoLido(null);
       return;
     }
+    console.log(`❌ [CACHE LOCAL] Não encontrado`);
 
     // 2. Consulta OpenFoodFacts (Prioridade API)
+    console.log(`🌐 [BUSCANDO] OpenFoodFacts...`);
     let produtoEncontrado = await buscarProdutoOFF(codigo_barras);
 
-    // 3. Consulta API Cosmos (Fallback)
-    if (!produtoEncontrado) {
+    if (produtoEncontrado) {
+      console.log(`✅ [ORIGEM: OPENFOODFACTS] Produto encontrado!`);
+      console.log(`   📦 Dados:`, produtoEncontrado);
+    } else {
+      console.log(`❌ [OPENFOODFACTS] Não encontrado`);
+
+      // 3. Consulta API Cosmos (Fallback)
+      console.log(`🌐 [BUSCANDO] Cosmos API...`);
       produtoEncontrado = await buscarProdutoCosmos(codigo_barras);
+
+      if (produtoEncontrado) {
+        console.log(`✅ [ORIGEM: COSMOS] Produto encontrado!`);
+        console.log(`   📦 Dados:`, produtoEncontrado);
+      } else {
+        console.log(`❌ [COSMOS] Não encontrado`);
+        console.log(`📝 [ORIGEM: CADASTRO MANUAL] Usuário precisará preencher`);
+      }
     }
 
     if (produtoEncontrado) {
