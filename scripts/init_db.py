@@ -28,6 +28,7 @@ from urllib.parse import urlparse
 # Altere para True se quiser DROPAR todas as tabelas e recomeçar do zero.
 # ⚠️ CUIDADO: Isso apaga TODOS os dados do banco!
 RESETAR_BANCO = False
+AMBIENTE = os.getenv("PG_ENV")
 
 # =============================================================================
 # CONFIGURAÇÃO DE CONEXÃO
@@ -318,7 +319,7 @@ def main():
     conn = get_connection()
     
     # Reset opcional (se habilitado)
-    if RESETAR_BANCO:
+    if RESETAR_BANCO and AMBIENTE == "development":
         reset_database(conn)
     
     apply_migrations(conn)
