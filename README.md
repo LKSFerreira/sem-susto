@@ -150,8 +150,9 @@ flowchart LR
 ## 🗺 Roadmap
 
 - [x] MVP com scanner e carrinho
-- [x] Integração com Gemini AI
-- [ ] Scanner real com `html5-qrcode`
+- [x] Integração com Gemini AI / Groq
+- [x] Scanner real com `html5-qrcode`
+- [x] Deploy em produção (https://www.semsusto.app)
 - [ ] Histórico de compras
 - [ ] Comparador de preços entre lojas
 - [ ] PWA com suporte offline completo
