@@ -199,7 +199,7 @@
 
 ### Configuração de Ambiente
 
-- [ ] **2.1** PostgreSQL local via Docker Compose (já existe no devcontainer)
+- [x] **2.1** PostgreSQL local via Docker Compose (já existe no `.devcontainer`)
 - [ ] **2.2** PostgreSQL produção (Supabase Database ou Neon.tech)
 - [ ] **2.3** Variáveis de ambiente separadas (`DATABASE_URL_DEV`, `DATABASE_URL_PROD`)
 
@@ -207,12 +207,12 @@
 
 - [ ] **2.4** Implementar `RepositorioProdutosPostgres`
 - [ ] **2.5** Implementar `RepositorioCarrinhoPostgres`
-- [ ] **2.6** Criar script de migração de dados (localStorage → Postgres)
+- [x] **2.6** Criar script de migração de dados (`scripts/init_db.py`)
 - [ ] **2.7** Switch automático baseado em ambiente
 
 ### Validação
 
-- [ ] **2.8** Testar localmente com banco Postgres
+- [x] **2.8** Testar localmente com banco Postgres (30.196 produtos importados)
 - [ ] **2.9** Deploy na Vercel conectando ao banco de produção
 - [ ] **2.10** Verificar dados persistindo entre dispositivos
 
