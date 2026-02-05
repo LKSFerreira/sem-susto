@@ -104,6 +104,65 @@ export const comprimirImagem = async (arquivo: File, qualidade: number = 0.7, la
   });
 };
 
+/**
+ * Comprime uma imagem em formato Base64 para reduzir tamanho antes de salvar no banco.
+ * Usa Canvas nativo para redimensionar e recodificar com menor qualidade.
+ *
+ * **Exemplo:**
+ *
+ * .. code-block:: typescript
+ *
+ *     const base64Original = canvas.toDataURL('image/jpeg', 0.9);
+ *     const base64Comprimido = await comprimirImagemBase64(base64Original);
+ *     console.log('Antes:', base64Original.length, 'Depois:', base64Comprimido.length);
+ *
+ * :param base64: String base64 da imagem (com prefixo data:image/...)
+ * :param qualidade: Qualidade JPEG de 0 a 1 (default: 0.7)
+ * :param larguraMaxima: Largura máxima em pixels (default: 400)
+ * :returns: String base64 comprimida
+ */
+export const comprimirImagemBase64 = async (
+  base64: string,
+  qualidade: number = 0.7,
+  larguraMaxima: number = 400
+): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const imagem = new Image();
+    imagem.src = base64;
+
+    imagem.onload = () => {
+      const canvas = document.createElement('canvas');
+
+      // Calcula nova dimensão mantendo proporção
+      const proporcao = larguraMaxima / imagem.width;
+      const novaLargura = imagem.width > larguraMaxima ? larguraMaxima : imagem.width;
+      const novaAltura = imagem.width > larguraMaxima ? imagem.height * proporcao : imagem.height;
+
+      canvas.width = novaLargura;
+      canvas.height = novaAltura;
+
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(imagem, 0, 0, novaLargura, novaAltura);
+
+        // Retorna base64 comprimido em JPEG
+        const resultado = canvas.toDataURL('image/jpeg', qualidade);
+
+        // Log para debug (útil durante desenvolvimento)
+        const tamanhoOriginal = Math.round(base64.length / 1024);
+        const tamanhoFinal = Math.round(resultado.length / 1024);
+        console.log(`📷 Compressão: ${tamanhoOriginal}KB → ${tamanhoFinal}KB (${Math.round((1 - tamanhoFinal / tamanhoOriginal) * 100)}% redução)`);
+
+        resolve(resultado);
+      } else {
+        reject(new Error('Falha ao obter contexto do Canvas'));
+      }
+    };
+
+    imagem.onerror = (erro) => reject(erro);
+  });
+};
+
 const UNIT_MAP: Record<string, string> = {
   // --- VOLUME ---
   // Litros
