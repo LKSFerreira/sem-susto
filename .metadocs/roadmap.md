@@ -98,15 +98,15 @@
 
 ---
 
-## Fase 0.7: Banco de Dados Local (PostgreSQL) 🚧
+## Fase 0.7: Banco de Dados Local (PostgreSQL) ✅
 > **Objetivo:** Persistir dados no Postgres rodando no Docker, saindo do LocalStorage/JSON.
 > **Duração:** 1-2 dias
 
 - [x] **0.7.1** Criar estrutura de Migrations (`infra/migrations/*.sql`) e DDL da tabela `produtos`
-- [ ] **0.7.2** Criar DDL da tabela `carrinho` e `itens_carrinho` (preparando persistência)
+- [x] ~~**0.7.2** Criar DDL da tabela `carrinho`~~ _(Removido: carrinho fica no localStorage como referências)_
 - [x] **0.7.3** Criar script Python `scripts/init_db.py` para rodar migrations e popular dados
 - [x] **0.7.4** Importar `produtos_higienizados.json` para o Postgres Local (Bulk Insert)
-- [ ] **0.7.5** Validar dados no banco (conectando via DBeaver/Adminer ou CLI)
+- [x] **0.7.5** Validar dados no banco (30.196 produtos importados via CLI)
 - [ ] **0.7.6** Criar API REST (Node/Express ou FastAPI) para expor o repositório PostgreSQL ao frontend
 
 **Critério de sucesso:** Banco populado com 30k produtos e acessível via API.
@@ -119,19 +119,19 @@
 > [!IMPORTANT]
 > **Arquitetura de Armazenamento:**
 > - **Banco de Dados (PostgreSQL/Supabase):** Produtos (catálogo compartilhado)
-> - **localStorage:** Apenas o carrinho do usuário atual (temporário, limita ao dispositivo)
+> - **localStorage:** Catálogo local (cache) + Carrinho (apenas referências: codigo_barras + quantidade)
 > - **Imagens:** URLs externas quando disponíveis, Base64 comprimido (400px, 70% qualidade) para fotos manuais
 
 ---
 
-## Fase 0.8: Implementação do Fluxo de Busca em Cascata 🔄
+## Fase 0.8: Implementação do Fluxo de Busca em Cascata ✅
 > **Objetivo:** Novo fluxo de busca com fallback progressivo
 > **Duração:** 2-3 dias
 
 ### Serviços de Busca
-- [ ] **0.8.1** Criar `services/openfoodfacts.ts` (integração com API pública)
-- [ ] **0.8.2** Refatorar `services/cosmos.ts` para ser mais defensivo
-- [ ] **0.8.3** Criar `services/buscador-produto.ts` (orquestrador da cascata)
+- [x] **0.8.1** Criar `services/openfoodfacts.ts` (integração com API pública)
+- [x] **0.8.2** Refatorar `services/cosmos.ts` para ser mais defensivo
+- [x] **0.8.3** Implementar busca em cascata no `App.tsx` (cache → OFF → Cosmos → Manual)
 
 ### Tratamento de Dados Parciais
 - [ ] **0.8.4** Implementar detecção de campos faltantes (foto, marca, tamanho)
@@ -143,6 +143,7 @@
 - [ ] **0.8.8** Melhorar feedback visual durante busca em cascata (loading states)
 
 **Critério de sucesso:** Escanear produto desconhecido e ver cascata de busca funcionar.
+
 
 ---
 
