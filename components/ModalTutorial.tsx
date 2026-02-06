@@ -16,7 +16,7 @@ interface PropsModalTutorial {
  */
 export const ModalTutorial: React.FC<PropsModalTutorial> = ({ aoFechar }) => {
   const [slideAtual, setSlideAtual] = useState(0);
-  const totalSlides = 2; // Intro + Scanner (Foto movida para DicaFoto contextual)
+  const totalSlides = 2; // Intro + Scanner (Foto movida para TutorialFoto contextual)
 
   const avancar = () => {
     if (slideAtual < totalSlides - 1) {

@@ -4,7 +4,7 @@ import { REGEX_UNIDADE } from '../constants';
 import { comprimirImagem } from '../services/utilitarios';
 import { extrairDadosDoRotulo } from '../services/ia';
 import { ModalRecorte } from './ModalRecorte';
-import { DicaFoto, useDicaFotoPrimeiroUso } from './DicaFoto';
+import { TutorialFoto, useTutorialFotoPrimeiroUso } from './TutorialFoto';
 
 interface PropsFormulario {
   gtinInicial: string;
@@ -45,10 +45,10 @@ export const FormularioProduto: React.FC<PropsFormulario> = ({
   // Flag para controlar inicialização única
   const [inicializado, setInicializado] = useState(false);
 
-  // Estado para exibir DicaFoto contextual
-  const [mostraDicaFoto, setMostraDicaFoto] = useState(false);
+  // Estado para exibir TutorialFoto contextual
+  const [mostraTutorialFoto, setMostraTutorialFoto] = useState(false);
   const [inputPendente, setInputPendente] = useState<HTMLInputElement | null>(null);
-  const dicaFoto = useDicaFotoPrimeiroUso();
+  const tutorialFoto = useTutorialFotoPrimeiroUso();
 
   // Detecta campos que vieram vazios da API (para destaque visual)
   const camposFaltantes = useMemo(() => {
@@ -131,10 +131,10 @@ export const FormularioProduto: React.FC<PropsFormulario> = ({
    * Intercepta o click no input de foto para mostrar dica contextual na primeira vez.
    */
   const interceptarClickFoto = (e: React.MouseEvent<HTMLInputElement>) => {
-    if (dicaFoto.deveExibir()) {
+    if (tutorialFoto.deveExibir()) {
       e.preventDefault();
       setInputPendente(e.currentTarget);
-      setMostraDicaFoto(true);
+      setMostraTutorialFoto(true);
     }
   };
 
@@ -286,11 +286,11 @@ export const FormularioProduto: React.FC<PropsFormulario> = ({
           />
         )}
         {/* Dica contextual de foto - primeira vez que usa câmera */}
-        {mostraDicaFoto && (
-          <DicaFoto
+        {mostraTutorialFoto && (
+          <TutorialFoto
             aoFechar={() => {
-              setMostraDicaFoto(false);
-              // Dispara o click pendente após fechar a dica
+              setMostraTutorialFoto(false);
+              // Dispara o click pendente após fechar o tutorial
               if (inputPendente) {
                 inputPendente.click();
                 setInputPendente(null);
