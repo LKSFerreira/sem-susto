@@ -118,26 +118,40 @@ export default function App() {
   /**
    * Adiciona um produto ao carrinho (apenas referência).
    * O produto já deve estar no catálogo.
+   * 
+   * IMPORTANTE: Calcula a quantidade final ANTES de atualizar.
+   * Isso garante que estado React e localStorage fiquem sincronizados.
    */
   const adicionarAoCarrinho = useCallback(async (codigo_barras: string) => {
-    // Atualiza estado local primeiro (UI responsiva)
+    // Lê o estado atual para calcular a nova quantidade
+    // (usa a referência do carrinho no momento da chamada)
+    const itemExistente = carrinho.find(item => item.codigo_barras === codigo_barras);
+    const novaQuantidade = itemExistente ? itemExistente.quantidade + 1 : 1;
+
+    // Atualiza estado local (UI responsiva)
     setCarrinho(prev => {
       const index = prev.findIndex(item => item.codigo_barras === codigo_barras);
       if (index >= 0) {
         const novoCarrinho = [...prev];
-        novoCarrinho[index].quantidade += 1;
+        novoCarrinho[index].quantidade = novaQuantidade;
         return novoCarrinho;
       }
       return [...prev, { codigo_barras, quantidade: 1 }];
     });
 
-    // Persiste no repositório
+    // Persiste no repositório com quantidade absoluta
     try {
-      await repositorioCarrinho.adicionarItem(codigo_barras, 1);
+      if (itemExistente) {
+        // Produto já existe: atualiza quantidade
+        await repositorioCarrinho.atualizarQuantidade(codigo_barras, novaQuantidade);
+      } else {
+        // Produto novo: adiciona com quantidade 1
+        await repositorioCarrinho.adicionarItem(codigo_barras, 1);
+      }
     } catch (erro) {
-      console.error('Erro ao adicionar item ao carrinho:', erro);
+      console.error('Erro ao sincronizar carrinho:', erro);
     }
-  }, [repositorioCarrinho]);
+  }, [carrinho, repositorioCarrinho]);
 
   /**
    * Salva produto no catálogo (localStorage + banco de dados).
