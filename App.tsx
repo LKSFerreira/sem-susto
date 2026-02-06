@@ -7,6 +7,7 @@ import { LoadingCarrinho } from './components/LoadingCarrinho';
 import { FormularioProduto } from './components/FormularioProduto';
 import { DebugConsole } from './components/DebugConsole';
 import { ModalDoacao } from './components/ModalDoacao';
+import { ModalContato } from './components/ModalContato';
 import { ModalConfirmacao } from './components/ModalConfirmacao';
 import { ModalTutorial, useTutorialPrimeiroAcesso } from './components/ModalTutorial';
 import { useRepositorios } from './contextos/ContextoRepositorios';
@@ -40,6 +41,7 @@ export default function App() {
   const [modoEdicao, setModoEdicao] = useState(false);
 
   const [mostrarDoacao, setMostrarDoacao] = useState(false);
+  const [mostrarContato, setMostrarContato] = useState(false);
   const [mostrarConfirmacaoEsvaziar, setMostrarConfirmacaoEsvaziar] = useState(false);
   const [mostrarConfirmacaoFinalizar, setMostrarConfirmacaoFinalizar] = useState(false);
 
@@ -423,14 +425,34 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Botão de Doação */}
+            {/* 
+              BOTÃO WHATSAPP - Linhas 429-435
+              Classes para ajustar:
+              - p-3        → padding (p-1, p-2, p-3, p-4, p-5...)
+              - rounded-xl → bordas (rounded, rounded-lg, rounded-xl, rounded-2xl, rounded-full)
+              - text-xl    → tamanho do ícone (text-sm, text-base, text-lg, text-xl, text-2xl, text-3xl)
+            */}
+            <button
+              onClick={() => setMostrarContato(true)}
+              className="bg-green-50 text-green-600 p-2 rounded-xl text-sm font-bold border border-green-100 hover:bg-green-100 transition-colors flex items-center justify-center shadow-sm"
+              title="Fale conosco via WhatsApp"
+            >
+              <i className="fab fa-whatsapp text-2xl"></i>
+            </button>
+
+            {/* 
+              BOTÃO DOAÇÃO - Linhas 437-444
+              Classes para ajustar:
+              - p-3        → padding (p-1, p-2, p-3, p-4, p-5...)
+              - rounded-xl → bordas (rounded, rounded-lg, rounded-xl, rounded-2xl, rounded-full)
+              - text-xl    → tamanho do ícone (text-sm, text-base, text-lg, text-xl, text-2xl, text-3xl)
+            */}
             <button
               onClick={() => setMostrarDoacao(true)}
-              className="bg-red-50 text-red-500 px-3 py-2 rounded-lg text-xs font-bold border border-red-100 hover:bg-red-100 transition-colors flex items-center gap-1 shadow-sm"
+              className="bg-red-50 text-red-500 p-2 rounded-xl text-xs font-bold border border-red-100 hover:bg-red-100 transition-colors flex items-center justify-center shadow-sm"
               title="Fazer uma doação"
             >
-              <i className="fas fa-heart"></i>
-              <span className="hidden sm:inline">Apoiar</span>
+              <i className="fas fa-heart text-2xl"></i>
             </button>
 
             {/* Botão Esvaziar Carrinho */}
@@ -585,6 +607,11 @@ export default function App() {
       {/* Modal de Doação */}
       {mostrarDoacao && (
         <ModalDoacao aoFechar={() => setMostrarDoacao(false)} />
+      )}
+
+      {/* Modal de Contato WhatsApp */}
+      {mostrarContato && (
+        <ModalContato aoFechar={() => setMostrarContato(false)} />
       )}
       {/* Tela de Loading Reutilizável */}
       <LoadingCarrinho
