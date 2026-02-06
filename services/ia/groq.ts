@@ -89,10 +89,22 @@ export class ServicoIAGroq implements ServicoLeituraRotulo {
 
       const prompt = `Analise o seguinte texto de produto: "${textoEntrada}".
       
-      Tarefa: Padronizar e extrair Nome, Marca e Tamanho.
-      1. descricao: Nome descritivo (Title Case). Remova códigos estranhos.
-      2. marca: Marca do fabricante. Se não tiver, tente inferir ou use "Genérica".
+      Tarefa: Padronizar e extrair Nome Completo, Marca e Tamanho.
+      
+      REGRAS CRÍTICAS:
+      1. descricao: Nome COMPLETO do produto (ex: "Nescau 2.0", não apenas "2.0"). 
+         - Sempre inclua o nome comercial completo.
+         - Remova códigos estranhos e caracteres especiais.
+         - Use Title Case.
+      2. marca: APENAS a marca do fabricante (ex: "Nestlé", "Coca-Cola").
+         - NÃO inclua o nome do produto na marca.
+         - Se houver vírgula, pegue apenas a primeira parte que é a marca real.
+         - Se não encontrar marca, use "Genérica".
       3. tamanho: Peso/Volume padronizado (ex: 2L, 500g, 350ml).
+      
+      EXEMPLOS:
+      - "NESCAU 2.0 CEREAL MATINAL NESTLE 400G" → { "descricao": "Nescau 2.0 Cereal Matinal", "marca": "Nestlé", "tamanho": "400g" }
+      - "COCA COLA LT 350ML" → { "descricao": "Coca Cola Lata", "marca": "Coca-Cola", "tamanho": "350ml" }
       
       SEM PREAMBULO. APENAS JSON:
       { "descricao": "...", "marca": "...", "tamanho": "..." }`;
