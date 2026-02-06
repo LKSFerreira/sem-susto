@@ -3,6 +3,7 @@ import { Produto, ItemCarrinho, ItemCarrinhoExpandido, TelaApp } from './types';
 import { IMAGEM_PADRAO } from './constants';
 import { formatarMoeda } from './services/utilitarios';
 import { ScannerBarras } from './components/ScannerBarras';
+import { LoadingCarrinho } from './components/LoadingCarrinho';
 import { FormularioProduto } from './components/FormularioProduto';
 import { DebugConsole } from './components/DebugConsole';
 import { ModalDoacao } from './components/ModalDoacao';
@@ -41,6 +42,9 @@ export default function App() {
   const [mostrarDoacao, setMostrarDoacao] = useState(false);
   const [mostrarConfirmacaoEsvaziar, setMostrarConfirmacaoEsvaziar] = useState(false);
   const [mostrarConfirmacaoFinalizar, setMostrarConfirmacaoFinalizar] = useState(false);
+
+  // Estado para feedback visual durante busca em cascata
+  const [etapaBusca, setEtapaBusca] = useState<string | null>(null);
 
   // --- Efeitos (Carregamento inicial) ---
 
@@ -181,9 +185,11 @@ export default function App() {
     console.log(`\n🔍 [BUSCA] Iniciando busca para GTIN: ${codigo_barras}`);
 
     // 1. Verifica cache local (catálogo localStorage)
+    setEtapaBusca('💾 Verificando catálogo local...');
     if (catalogo[codigo_barras]) {
       console.log(`✅ [ORIGEM: CACHE LOCAL] Produto encontrado no catálogo local`);
       console.log(`   📦 Dados:`, catalogo[codigo_barras]);
+      setEtapaBusca(null);
       await adicionarAoCarrinho(codigo_barras);
       setTelaAtual('DASHBOARD');
       setCodigoLido(null);
@@ -194,7 +200,11 @@ export default function App() {
     // 2. TODO: Buscar no Banco de Dados PostgreSQL (endpoint ainda não existe)
 
     // 3. Consulta OpenFoodFacts (Prioridade API)
-    console.log(`🌐 [BUSCANDO] OpenFoodFacts...`);
+    setEtapaBusca('🌍 Buscando produtos...');
+    console.log(`🌍 [BUSCANDO] OpenFoodFacts API...`);
+
+    // Delay simulado para UX (opcional, pode ser removido depois)
+    //await new Promise(r => setTimeout(r, 9999999999999));
     let produtoEncontrado = await buscarProdutoOFF(codigo_barras);
 
     if (produtoEncontrado) {
@@ -205,12 +215,16 @@ export default function App() {
       produtoEncontrado.preco_estimado = 0;
       await salvarProdutoNoCatalogo(produtoEncontrado);
       console.log(`💾 [CACHE] Produto salvo no catálogo local (com preço R$ 0,00)`);
+      setEtapaBusca(null);
 
     } else {
       console.log(`❌ [OPENFOODFACTS] Não encontrado`);
 
       // 4. Consulta API Cosmos (Fallback)
-      console.log(`🌐 [BUSCANDO] Cosmos API...`);
+      setEtapaBusca('📦 Verificando catálogo...');
+      console.log(`📦 [BUSCANDO] Cosmos API...`);
+
+      // await new Promise(r => setTimeout(r, 9999999999999));
       produtoEncontrado = await buscarProdutoCosmos(codigo_barras);
 
       if (produtoEncontrado) {
@@ -221,10 +235,12 @@ export default function App() {
         produtoEncontrado.preco_estimado = 0;
         await salvarProdutoNoCatalogo(produtoEncontrado);
         console.log(`💾 [CACHE] Produto salvo no catálogo local (com preço R$ 0,00)`);
+        setEtapaBusca(null);
 
       } else {
         console.log(`❌ [COSMOS] Não encontrado`);
         console.log(`📝 [ORIGEM: CADASTRO MANUAL] Usuário precisará preencher`);
+        setEtapaBusca(null);
       }
     }
 
@@ -513,7 +529,13 @@ export default function App() {
 
           <div className="flex gap-3">
             <button
-              onClick={() => setTelaAtual('SCANNER')}
+              onClick={() => {
+                // --- MODO DEBUG: TESTE DE ANIMAÇÃO DE LOADING ---
+                // Simula leitura de código direto para testar animação
+                // 7891000100103 = Leite
+                //aoLerCodigo('7891000100103');
+                setTelaAtual('SCANNER'); // Original
+              }}
               className="flex-1 bg-verde-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-verde-700 active:transform active:scale-95 transition-all flex items-center justify-center gap-2"
             >
               <i className="fas fa-barcode text-xl"></i>
@@ -542,6 +564,11 @@ export default function App() {
       {mostrarDoacao && (
         <ModalDoacao aoFechar={() => setMostrarDoacao(false)} />
       )}
+      {/* Tela de Loading Reutilizável */}
+      <LoadingCarrinho
+        visivel={etapaBusca !== null}
+        titulo={etapaBusca || "Carregando..."}
+      />
 
       {/* Scanner Modal */}
       {telaAtual === 'SCANNER' && (
