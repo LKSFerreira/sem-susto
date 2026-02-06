@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Produto } from '../types';
 import { REGEX_UNIDADE } from '../constants';
 import { comprimirImagem } from '../services/utilitarios';
 import { extrairDadosDoRotulo } from '../services/ia';
 import { ModalRecorte } from './ModalRecorte';
+import { DicaFoto, useDicaFotoPrimeiroUso } from './DicaFoto';
 
 interface PropsFormulario {
   gtinInicial: string;
@@ -43,6 +44,25 @@ export const FormularioProduto: React.FC<PropsFormulario> = ({
 
   // Flag para controlar inicialização única
   const [inicializado, setInicializado] = useState(false);
+
+  // Estado para exibir DicaFoto contextual
+  const [mostraDicaFoto, setMostraDicaFoto] = useState(false);
+  const [inputPendente, setInputPendente] = useState<HTMLInputElement | null>(null);
+  const dicaFoto = useDicaFotoPrimeiroUso();
+
+  // Detecta campos que vieram vazios da API (para destaque visual)
+  const camposFaltantes = useMemo(() => {
+    // Só destaca como "faltante" se veio de uma API (dadosPrePreenchidos) mas sem o dado
+    if (!dadosPrePreenchidos) return [];
+
+    const faltantes: string[] = [];
+    if (!dadosPrePreenchidos.imagem) faltantes.push('imagem');
+    if (!dadosPrePreenchidos.marca) faltantes.push('marca');
+    if (!dadosPrePreenchidos.tamanho) faltantes.push('tamanho');
+    return faltantes;
+  }, [dadosPrePreenchidos]);
+
+  const temCamposFaltantes = camposFaltantes.length > 0;
 
   // Preenche dados iniciais
   useEffect(() => {
@@ -106,6 +126,17 @@ export const FormularioProduto: React.FC<PropsFormulario> = ({
     return () => clearTimeout(timer);
   }, [descricao, marca, tamanho, analisandoIA, focoInicialFeito]);
   // Removemos priceInput das dependências para não refocar ao digitar!
+
+  /**
+   * Intercepta o click no input de foto para mostrar dica contextual na primeira vez.
+   */
+  const interceptarClickFoto = (e: React.MouseEvent<HTMLInputElement>) => {
+    if (dicaFoto.deveExibir()) {
+      e.preventDefault();
+      setInputPendente(e.currentTarget);
+      setMostraDicaFoto(true);
+    }
+  };
 
   const lidarComSelecaoImagem = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -254,6 +285,19 @@ export const FormularioProduto: React.FC<PropsFormulario> = ({
             aoCancelar={aoCancelarRecorte}
           />
         )}
+        {/* Dica contextual de foto - primeira vez que usa câmera */}
+        {mostraDicaFoto && (
+          <DicaFoto
+            aoFechar={() => {
+              setMostraDicaFoto(false);
+              // Dispara o click pendente após fechar a dica
+              if (inputPendente) {
+                inputPendente.click();
+                setInputPendente(null);
+              }
+            }}
+          />
+        )}
         <style>{`
           @keyframes border-spin {
             100% { transform: rotate(360deg); }
@@ -261,6 +305,19 @@ export const FormularioProduto: React.FC<PropsFormulario> = ({
         `}</style>
 
         <form id="form-produto" onSubmit={validarESalvar} className="flex flex-col gap-3 h-full">
+          {/* Banner de Campos Faltantes */}
+          {temCamposFaltantes && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-2">
+              <i className="fas fa-lightbulb text-amber-500 mt-0.5"></i>
+              <div>
+                <p className="text-amber-800 text-sm font-medium">Complete os dados para melhorar o catálogo</p>
+                <p className="text-amber-600 text-xs mt-0.5">
+                  Campos faltantes: {camposFaltantes.map(c => c === 'imagem' ? 'foto' : c).join(', ')}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* FOTO */}
           <div
             className={`transition-all duration-300 ${!imagem ? 'ring-2 ring-red-100 rounded-xl p-1 bg-red-50' : ''
@@ -285,6 +342,7 @@ export const FormularioProduto: React.FC<PropsFormulario> = ({
                   <input
                     type="file"
                     accept="image/*"
+                    onClick={interceptarClickFoto}
                     onChange={lidarComSelecaoImagem}
                     disabled={analisandoIA}
                     className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
@@ -336,6 +394,7 @@ export const FormularioProduto: React.FC<PropsFormulario> = ({
                       type="file"
                       accept="image/*"
                       capture="environment"
+                      onClick={interceptarClickFoto}
                       onChange={lidarComSelecaoImagem}
                       disabled={analisandoIA}
                       className="hidden"
@@ -384,7 +443,7 @@ export const FormularioProduto: React.FC<PropsFormulario> = ({
 
           <div className="flex flex-col gap-3 flex-1">
             <div>
-              <label className={classeLabel}>Nome do Produto</label>
+              <label className={classeLabel}>Produto</label>
               <input
                 ref={refDescricao}
                 value={descricao}
@@ -400,18 +459,28 @@ export const FormularioProduto: React.FC<PropsFormulario> = ({
             </div>
             <div className="flex gap-3">
               <div className="flex-[3]">
-                <label className={classeLabel}>Marca</label>
+                <label className={classeLabel}>
+                  Marca
+                  {camposFaltantes.includes('marca') && (
+                    <span className="text-amber-500 ml-1" title="Campo faltante">⚠️</span>
+                  )}
+                </label>
                 <input
                   ref={refMarca}
                   value={marca}
                   onChange={e => setMarca(e.target.value)}
-                  className={`${classeInput} ${analisandoIA ? 'animate-pulse bg-gray-600' : ''}`}
+                  className={`${classeInput} ${analisandoIA ? 'animate-pulse bg-gray-600' : ''} ${camposFaltantes.includes('marca') && !marca ? 'border-amber-400 ring-1 ring-amber-300' : ''}`}
                   placeholder="Ex: Longa Vida"
                   disabled={analisandoIA}
                 />
               </div>
               <div className="flex-[2]">
-                <label className={classeLabel}>Tamanho</label>
+                <label className={classeLabel}>
+                  Tamanho
+                  {camposFaltantes.includes('tamanho') && (
+                    <span className="text-amber-500 ml-1" title="Campo faltante">⚠️</span>
+                  )}
+                </label>
                 <input
                   ref={refTamanho}
                   value={tamanho}
@@ -421,7 +490,7 @@ export const FormularioProduto: React.FC<PropsFormulario> = ({
                   }}
                   className={`${classeInput} ${tamanho && !REGEX_UNIDADE.test(tamanho) ? 'border-red-400 text-red-100' : ''
                     } ${analisandoIA ? 'animate-pulse bg-gray-600' : ''} ${campoComErro === 'tamanho' ? 'border-red-500 ring-2 ring-red-400' : ''
-                    }`}
+                    } ${camposFaltantes.includes('tamanho') && !tamanho ? 'border-amber-400 ring-1 ring-amber-300' : ''}`}
                   placeholder="Ex: 1L"
                   disabled={analisandoIA}
                 />

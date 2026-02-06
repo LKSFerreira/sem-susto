@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 
 // VERSÃO DO TUTORIAL: Incrementar quando houver mudanças significativas
 // Isso força usuários que viram versões antigas a verem a nova versão
-const CHAVE_TUTORIAL_VISTO = 'sem_susto_tutorial_v2';
+const CHAVE_TUTORIAL_VISTO = 'sem_susto_tutorial_v3';
 
 interface PropsModalTutorial {
   aoFechar: () => void;
@@ -16,7 +16,7 @@ interface PropsModalTutorial {
  */
 export const ModalTutorial: React.FC<PropsModalTutorial> = ({ aoFechar }) => {
   const [slideAtual, setSlideAtual] = useState(0);
-  const totalSlides = 3; // Agora são 3 slides: Intro + Scanner + Foto
+  const totalSlides = 2; // Intro + Scanner (Foto movida para DicaFoto contextual)
 
   const avancar = () => {
     if (slideAtual < totalSlides - 1) {
@@ -176,69 +176,6 @@ export const ModalTutorial: React.FC<PropsModalTutorial> = ({ aoFechar }) => {
               <p className="text-white/80 text-lg font-medium">Centralize o código</p>
             </div>
           )}
-
-          {/* Slide 2: Foto para OCR */}
-          {slideAtual === 2 && (
-            <div className="flex flex-col items-center text-center animate-fade-in max-w-sm">
-              {/* Comparação visual: foto ruim vs foto boa */}
-              <div className="flex gap-4 mb-6">
-                {/* Foto ruim */}
-                <div className="relative">
-                  <div className="w-28 h-36 bg-gray-700 rounded-xl flex items-center justify-center overflow-hidden border-4 border-red-400/50">
-                    {/* Rótulo borrado/escuro */}
-                    <div className="w-16 h-20 bg-gray-600 rounded blur-sm opacity-50"></div>
-                  </div>
-                  {/* X vermelho */}
-                  <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-red-500 rounded-full flex items-center justify-center shadow-lg">
-                    <i className="fas fa-times text-white"></i>
-                  </div>
-                </div>
-
-                {/* Seta */}
-                <div className="flex items-center text-white/50">
-                  <i className="fas fa-arrow-right text-xl"></i>
-                </div>
-
-                {/* Foto boa */}
-                <div className="relative">
-                  <div className="w-28 h-36 bg-white rounded-xl flex flex-col items-center justify-center overflow-hidden border-4 border-verde-400 p-2">
-                    {/* Rótulo nítido estilizado */}
-                    <div className="w-full h-4 bg-blue-500 rounded-sm mb-1"></div>
-                    <div className="w-3/4 h-2 bg-gray-300 rounded-sm mb-1"></div>
-                    <div className="w-1/2 h-2 bg-gray-300 rounded-sm mb-2"></div>
-                    <div className="w-full h-3 bg-verde-500 rounded-sm"></div>
-                    <div className="w-2/3 h-2 bg-gray-200 rounded-sm mt-1"></div>
-                  </div>
-                  {/* Check verde */}
-                  <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-verde-500 rounded-full flex items-center justify-center shadow-lg">
-                    <i className="fas fa-check text-white"></i>
-                  </div>
-                  {/* Ícone de sol (iluminação) */}
-                  <div className="absolute -top-2 -right-2 w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center animate-pulse">
-                    <i className="fas fa-sun text-yellow-800 text-xs"></i>
-                  </div>
-                </div>
-              </div>
-
-              {/* Ícones indicando o que fazer */}
-              <div className="flex items-center gap-4 bg-white/20 px-6 py-3 rounded-full mb-4">
-                <div className="flex flex-col items-center">
-                  <i className="fas fa-sun text-yellow-300 text-xl mb-1"></i>
-                </div>
-                <div className="w-px h-8 bg-white/30"></div>
-                <div className="flex flex-col items-center">
-                  <i className="fas fa-expand text-white text-xl mb-1"></i>
-                </div>
-                <div className="w-px h-8 bg-white/30"></div>
-                <div className="flex flex-col items-center">
-                  <i className="fas fa-hand-paper text-white text-xl mb-1"></i>
-                </div>
-              </div>
-
-              {/* Texto mínimo */}
-              <p className="text-white/80 text-lg font-medium">Foto legível da frente do produto</p>
-            </div>
-          )}
         </div>
 
         {/* Navegação inferior - mais próxima do centro */}
@@ -248,9 +185,8 @@ export const ModalTutorial: React.FC<PropsModalTutorial> = ({ aoFechar }) => {
             {Array.from({ length: totalSlides }).map((_, i) => (
               <div
                 key={i}
-                className={`h-2 rounded-full transition-all duration-300 ${
-                  i === slideAtual ? 'w-8 bg-white' : 'w-2 bg-white/30'
-                }`}
+                className={`h-2 rounded-full transition-all duration-300 ${i === slideAtual ? 'w-8 bg-white' : 'w-2 bg-white/30'
+                  }`}
               ></div>
             ))}
           </div>
