@@ -4,8 +4,8 @@
   "framework": "vite",
   "rewrites": [
     {
-      "source": "/api/cosmos/:path*",
-      "destination": "/api/cosmos/:path*"
+      "source": "/api/cosmos/gtin/:codigo",
+      "destination": "/api/cosmos/gtin/:codigo"
     }
   ]
 }
