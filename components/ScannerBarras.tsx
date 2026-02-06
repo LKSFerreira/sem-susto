@@ -14,6 +14,8 @@ export const ScannerBarras: React.FC<PropsScanner> = ({ aoLerCodigo, aoCancelar 
   // Referência para o scanner e controle de inicialização
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const scannerMountingRef = useRef(false);
+  // Controle de estado do scanner para evitar chamar stop() quando não está rodando
+  const scannerAtivoRef = useRef(false);
 
   useEffect(() => {
     // ID único para esta instância do componente
@@ -64,11 +66,13 @@ export const ScannerBarras: React.FC<PropsScanner> = ({ aoLerCodigo, aoCancelar 
 
             // Pausa e retorna
             scanner.pause(true);
+            scannerAtivoRef.current = false; // Marca como pausado
             aoLerCodigo(codigoDecodificado);
           },
           erro => { } // Ignora erros de frame
         );
 
+        scannerAtivoRef.current = true; // Scanner está rodando
         setStatusCamera('ativa');
       } catch (erro) {
         setStatusCamera('erro');
@@ -96,10 +100,12 @@ export const ScannerBarras: React.FC<PropsScanner> = ({ aoLerCodigo, aoCancelar 
     return () => {
       clearTimeout(timeoutId);
       scannerMountingRef.current = false;
-      if (scannerRef.current) {
+      // Só tenta parar se o scanner estiver realmente ativo
+      if (scannerRef.current && scannerAtivoRef.current) {
+        scannerAtivoRef.current = false;
         scannerRef.current.stop().catch(() => { });
-        scannerRef.current = null;
       }
+      scannerRef.current = null;
     };
   }, [aoLerCodigo]);
 
@@ -115,12 +121,18 @@ export const ScannerBarras: React.FC<PropsScanner> = ({ aoLerCodigo, aoCancelar 
   };
 
   const fecharScanner = () => {
-    if (scannerRef.current) {
+    // Só tenta parar se o scanner estiver realmente ativo
+    if (scannerRef.current && scannerAtivoRef.current) {
+      scannerAtivoRef.current = false;
       scannerRef.current
         .stop()
         .catch(() => { })
-        .finally(aoCancelar);
+        .finally(() => {
+          scannerRef.current = null;
+          aoCancelar();
+        });
     } else {
+      scannerRef.current = null;
       aoCancelar();
     }
   };
@@ -158,9 +170,16 @@ export const ScannerBarras: React.FC<PropsScanner> = ({ aoLerCodigo, aoCancelar 
             <div className="absolute inset-0 flex flex-col items-center justify-center text-white z-10 bg-gray-900 p-6 text-center">
               <i className="fas fa-exclamation-circle fa-3x text-red-500 mb-4"></i>
               <p className="font-bold mb-2 text-lg">{mensagemErro}</p>
-              <p className="text-sm text-gray-400">
+              <p className="text-sm text-gray-400 mb-4">
                 Por favor, digite o código manualmente abaixo.
               </p>
+              <button
+                onClick={fecharScanner}
+                className="bg-gray-700 hover:bg-gray-600 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+              >
+                <i className="fas fa-arrow-left mr-2"></i>
+                Voltar
+              </button>
             </div>
           )}
         </div>
