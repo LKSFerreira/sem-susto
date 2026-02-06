@@ -50,8 +50,16 @@ export default function App() {
 
   /**
    * Carrega dados do repositório ao iniciar o app.
+   * 
+   * Limpa localStorage para garantir experiência de "primeiro acesso" 
+   * durante fase de validação com usuários.
    */
   useEffect(() => {
+    // 🧹 DEBUG: Limpa localStorage para simular novo usuário a cada acesso
+    // TODO: Remover antes do deploy de produção!
+    localStorage.clear();
+    console.log('🧹 localStorage limpo - novo usuário simulado');
+
     const carregarDados = async () => {
       try {
         // Carrega catálogo (converte array para objeto indexado)
