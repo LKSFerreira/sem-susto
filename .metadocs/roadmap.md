@@ -134,13 +134,15 @@
 - [x] **0.8.3** Implementar busca em cascata no `App.tsx` (cache → OFF → Cosmos → Manual)
 
 ### Tratamento de Dados Parciais
-- [ ] **0.8.4** Implementar detecção de campos faltantes (foto, marca, tamanho)
-- [ ] **0.8.5** Criar componente `SolicitarFoto` para upload quando necessário
+- [x] **0.8.4** Implementar detecção de campos faltantes (foto, marca, tamanho)
+- [x] **0.8.5** Criar componente `DicaFoto` para orientar usuário sobre foto de qualidade
 
 ### Tutorial e UX
-- [ ] **0.8.6** Reduzir tutorial inicial para 2 slides (remover slide 3 do onboarding)
-- [ ] **0.8.7** Mover tela 3 do tutorial para exibição contextual: mostrar na primeira vez que usuário usar câmera/galeria
-- [ ] **0.8.8** Melhorar feedback visual durante busca em cascata (loading states)
+- [x] **0.8.6** Reduzir tutorial inicial para 2 slides (remover slide 3 do onboarding)
+- [x] **0.8.7** Ajustar lógica do `TutorialFoto`: Visual redesenhado ("Cereal Box"), validando com usuário. ✅
+- [x] **0.8.8** Melhorar feedback visual durante busca em cascata (loading states com animação de carrinho)
+- [x] **0.8.9** Extrair componente reutilizável `LoadingCarrinho.tsx`
+- [ ] **0.8.10** Criar função de reset completo do localStorage (limpa tutorial, carrinho, catálogo, DicaFoto)
 
 **Critério de sucesso:** Escanear produto desconhecido e ver cascata de busca funcionar.
 
