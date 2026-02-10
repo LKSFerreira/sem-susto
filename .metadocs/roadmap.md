@@ -149,6 +149,41 @@
 
 ---
 
+## Fase 0.8.5: Sistema de Monetização 💰
+> **Objetivo:** Implementar contribuição voluntária com tokens anônimos (conforme `.metadocs/monetizacao.md`)
+> **Duração:** 3-5 dias
+> **Dependência:** Decisões de negócio aprovadas em `monetizacao.md`
+
+### Schema e Migrations (Local First)
+- [ ] **0.8.5.1** Criar DDL da tabela `tokens` (token_hash, plano, status, criado_em, ativado_em, expira_em)
+- [ ] **0.8.5.2** Criar DDL da tabela `dispositivos` (token_hash, fingerprint_hash, ativado_em)
+- [ ] **0.8.5.3** Criar DDL da tabela `tentativas_ativacao` (timestamp, ip_hash, user_agent_hash, fingerprint, resultado)
+- [ ] **0.8.5.4** Rodar migrations no PostgreSQL local via `scripts/init_db.py`
+
+### Lógica de Tokens
+- [ ] **0.8.5.5** Implementar geração de token (`SEM-SUSTO-XXXXXXX`, charset sem ambíguos, base 30)
+- [ ] **0.8.5.6** Implementar ciclo de vida: INEXISTENTE → GERADO → ATIVO → EXPIRADO
+- [ ] **0.8.5.7** Implementar limite de 2 dispositivos por token + cooldown de 24h
+- [ ] **0.8.5.8** Implementar rate limiting (5 tentativas/hora por IP, bloqueio após 10 tokens inexistentes)
+
+### Integração com Pagamento (MVP)
+- [ ] **0.8.5.9** Integrar API Mercado Pago para geração de PIX
+- [ ] **0.8.5.10** Implementar polling de status de pagamento (intervalo: 5s)
+- [ ] **0.8.5.11** Gerar token automaticamente após confirmação de pagamento
+
+### Frontend
+- [ ] **0.8.5.12** Criar tela de planos de contribuição (Café R$5,90 / Lanche R$8,90 / Apoiador R$19,90)
+- [ ] **0.8.5.13** Criar modal pós-pagamento (exibir token, ativar, salvar via WhatsApp, enviar para alguém)
+- [ ] **0.8.5.14** Criar rota `/ativar/:token` para ativação via deep link
+- [ ] **0.8.5.15** Implementar funcionalidades gratuito vs premium (limites de IA e carrinho)
+
+**Critério de sucesso:** Fluxo completo local: escolher plano → pagar PIX → receber token → ativar → funcionalidades premium desbloqueadas.
+
+> [!NOTE]
+> **Referência completa:** Todas as regras de negócio, limites, frases da UI e decisões de LGPD estão em [monetizacao.md](.metadocs/monetizacao.md).
+
+---
+
 ## Fase 0.9: Configuração do Supabase 🗄️
 > **Objetivo:** Banco de dados na nuvem configurado e populado
 > **Duração:** 1 dia
