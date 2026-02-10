@@ -1,5 +1,6 @@
 ---
-trigger: always_on
+trigger: model_decision
+description: Regra para codificação em python.
 ---
 
 # Regras Específicas para Python

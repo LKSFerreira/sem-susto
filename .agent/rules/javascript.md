@@ -1,5 +1,6 @@
 ---
-trigger: linguagem_projeto == "javascript"
+trigger: model_decision
+description: Regras para o codificação em javascript.
 ---
 
 # Regras para JavaScript/TypeScript
