@@ -1,0 +1,15 @@
+# =============================================================================
+# Dockerfile - Sem Susto (Database PostgreSQL)
+# =============================================================================
+# Build: docker compose -f .devcontainer/compose.yaml build database
+# Run:   docker compose -f .devcontainer/compose.yaml up
+# =============================================================================
+
+FROM postgres:16-alpine
+
+# Metadados
+LABEL maintainer="Sem Susto Project"
+LABEL description="Ambiente de desenvolvimento PostgreSQL para o app Sem Susto"
+
+# Porta padrão do PostgreSQL
+EXPOSE 5432
