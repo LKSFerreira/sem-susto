@@ -21,8 +21,8 @@ CREATE TABLE IF NOT EXISTS produtos (
     preco_estimado NUMERIC(10,2) DEFAULT 0,
     
     -- Metadados
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    criado_em TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    atualizado_em TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Índices de Performance
@@ -43,5 +43,5 @@ COMMENT ON COLUMN produtos.marca IS 'Marca do produto';
 COMMENT ON COLUMN produtos.tamanho IS 'Tamanho do produto';
 COMMENT ON COLUMN produtos.imagem IS 'URL ou Base64 (híbrido)';
 COMMENT ON COLUMN produtos.preco_estimado IS 'Preço estimado do produto';
-COMMENT ON COLUMN produtos.created_at IS 'Data de criação do registro';
-COMMENT ON COLUMN produtos.updated_at IS 'Data de atualização do registro';
+COMMENT ON COLUMN produtos.criado_em IS 'Data de criação do registro';
+COMMENT ON COLUMN produtos.atualizado_em IS 'Data de atualização do registro';

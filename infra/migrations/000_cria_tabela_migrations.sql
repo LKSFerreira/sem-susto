@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
     migration_id VARCHAR(255) PRIMARY KEY,
     
     -- Quando a migration foi aplicada
-    applied_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    aplicada_em TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 COMMENT ON TABLE schema_migrations IS 'Controle de versão das migrations aplicadas ao banco';
