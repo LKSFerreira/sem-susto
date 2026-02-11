@@ -22,11 +22,11 @@ O Sem Susto é um ambiente **seguro, saudável e confiável**. A monetização r
 
 | Plano | Valor | Duração | Custo/dia |
 |---|---|---|---|
-| ☕ Café | R$ 5,90 | 10 dias | R$ 0,59 |
-| 🥤 Lanche | R$ 8,90 | 30 dias | R$ 0,30 |
-| 🎁 Apoiador | R$ 19,90 | 90 dias | R$ 0,22 |
+| ☕ Café | R$ 4,90 | 15 dias | R$ 0,33 |
+| 🥤 Lanche | R$ 6,90 | 30 dias | R$ 0,23 |
+| 🎁 Apoiador | R$ 12,90 | 60 dias | R$ 0,21 |
 
-**Estratégia de precificação:** O plano "Lanche" oferece o melhor custo-benefício relativo (30 dias por apenas R$3 a mais que o Café), induzindo o usuário a escolhê-lo. Isso gera uma receita mensal previsível.
+**Estratégia de precificação:** O plano "Lanche" oferece o melhor custo-benefício relativo (30 dias por apenas R$2 a mais que o Café), induzindo o usuário a escolhê-lo. Isso gera uma receita mensal previsível.
 
 ---
 
