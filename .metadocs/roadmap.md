@@ -155,10 +155,10 @@
 > **Dependência:** Decisões de negócio aprovadas em `monetizacao.md`
 
 ### Schema e Migrations (Local First)
-- [ ] **0.8.5.1** Criar DDL da tabela `tokens` (token_hash, plano, status, duracao_dias, criado_em, ativado_em, expira_em)
-- [ ] **0.8.5.2** Criar DDL da tabela `dispositivos` (token_hash, fingerprint_hash, vinculado_em)
-- [ ] **0.8.5.3** Criar DDL da tabela `tentativas_ativacao` (ip_hash, user_agent_hash, fingerprint_hash, token_hash_tentado, resultado, criado_em)
-- [ ] **0.8.5.4** Rodar migrations no PostgreSQL local via `scripts/init_db.py`
+- [x] **0.8.5.1** Criar DDL da tabela `tokens` (token_hash, plano, status, duracao_dias, criado_em, ativado_em, expira_em)
+- [x] **0.8.5.2** Criar DDL da tabela `dispositivos` (token_hash, fingerprint_hash, vinculado_em)
+- [x] **0.8.5.3** Criar DDL da tabela `tentativas_ativacao` (ip_hash, user_agent_hash, fingerprint_hash, token_hash_tentado, resultado, criado_em)
+- [x] **0.8.5.4** Rodar migrations no PostgreSQL local via `scripts/init_db.py`
 
 ### Lógica de Tokens (Backend)
 - [ ] **0.8.5.5** Implementar geração de token no backend (`SEM-SUSTO-XXXXXXX`, charset sem ambíguos, base 30)
