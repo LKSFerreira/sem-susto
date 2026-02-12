@@ -160,23 +160,25 @@
 - [x] **0.8.5.3** Criar DDL da tabela `tentativas_ativacao` (ip_hash, user_agent_hash, fingerprint_hash, token_hash_tentado, resultado, criado_em)
 - [x] **0.8.5.4** Rodar migrations no PostgreSQL local via `scripts/init_db.py`
 
-### Lógica de Tokens (Backend)
-- [ ] **0.8.5.5** Implementar geração de token no backend (`SEM-SUSTO-XXXXXXX`, charset sem ambíguos, base 30)
-- [ ] **0.8.5.6** Implementar ciclo de vida: VALIDO → ATIVO → EXPIRADO
-- [ ] **0.8.5.7** Implementar limite de 2 dispositivos por token + cooldown de 24h
-- [ ] **0.8.5.8** Implementar rate limiting (5 tentativas/hora por IP, bloqueio após 10 tentativas inválidas)
-- [ ] **0.8.5.9** Criar script CLI `scripts/gerar_token.py` para tokens trial manuais
+### Lógica de Tokens (Backend — Vercel Serverless Functions)
+- [x] **0.8.5.5** Implementar geração de token no backend — `POST /api/tokens/gerar` (charset base30, SHA-256, protegido por `X-API-Secret`)
+- [x] **0.8.5.6** Implementar ciclo de vida: VALIDO → ATIVO → EXPIRADO — `POST /api/tokens/ativar` (expiração lazy)
+- [x] **0.8.5.7** Implementar limite de 2 dispositivos por token + cooldown de 24h
+- [x] **0.8.5.8** Implementar rate limiting — `api/_lib/rate_limiter.ts` (5 tentativas/hora por IP, bloqueio após 10 tokens inexistentes)
+- [x] **0.8.5.9** Criar script CLI `scripts/gerar_token.py` para tokens trial manuais + `GET /api/tokens/consultar`
 
-### Integração com Pagamento (MVP)
-- [ ] **0.8.5.10** Integrar API Mercado Pago para geração de PIX
-- [ ] **0.8.5.11** Implementar polling de status de pagamento (intervalo: 5s)
-- [ ] **0.8.5.12** Gerar token automaticamente após confirmação de pagamento
-
-### Frontend
+### Frontend (Premium)
 - [ ] **0.8.5.13** Criar tela de planos de contribuição (Café R$4,90 / Lanche R$6,90 / Apoiador R$12,90)
 - [ ] **0.8.5.14** Criar modal pós-pagamento (exibir token, ativar, salvar via WhatsApp, enviar para alguém)
 - [ ] **0.8.5.15** Criar rota `/ativar/:token` para ativação via deep link
 - [ ] **0.8.5.16** Implementar funcionalidades gratuito vs premium (limites de IA e carrinho)
+- [ ] **0.8.5.17** Criar modal de status do token (plano, dias restantes, expiração) com dados do localStorage
+- [ ] **0.8.5.18** Implementar cache de status do token no localStorage (evitar requisições desnecessárias ao `/api/tokens/consultar`)
+
+### Integração com Pagamento (MVP — última etapa)
+- [ ] **0.8.5.10** Integrar API Mercado Pago para geração de PIX
+- [ ] **0.8.5.11** Implementar polling de status de pagamento (intervalo: 5s)
+- [ ] **0.8.5.12** Gerar token automaticamente após confirmação de pagamento
 
 **Critério de sucesso:** Fluxo completo local: escolher plano → pagar PIX → receber token → ativar → funcionalidades premium desbloqueadas.
 
