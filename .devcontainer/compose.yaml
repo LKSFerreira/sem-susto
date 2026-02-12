@@ -14,13 +14,14 @@ services:
     build:
       context: ../
       dockerfile: .devcontainer/Dockerfile.postgres
-    env_file:
-      - ../.env.development
     ports:
       - '5432:5432'
     volumes:
       - postgres-data:/var/lib/postgresql/data
     environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=sem_susto
       - PG_ENV=development
 
   # ---------------------------------------------------------------------------
@@ -35,6 +36,7 @@ services:
     working_dir: /app
     environment:
       - PG_ENV=development
+      - DATABASE_URL=postgresql://postgres:postgres@database:5432/sem_susto
     # Mantém o container vivo para rodarmos comandos manuais ou roda o script direto
     command: tail -f /dev/null
 
@@ -54,10 +56,9 @@ services:
     working_dir: /app
     stdin_open: true
     tty: true
-    env_file:
-      - ../.env.development
     environment:
       - NODE_ENV=development
+      - DATABASE_URL=postgresql://postgres:postgres@database:5432/sem_susto
       - WATCHPACK_POLLING=true
       - HOST_IP=${HOST_IP:-}
     depends_on:

@@ -7,7 +7,7 @@ import { Pool } from 'pg';
  * evitando o overhead de abrir/fechar conexão a cada requisição.
  *
  * A variável DATABASE_URL é configurada na Vercel (produção)
- * ou no .env.development (desenvolvimento).
+ * ou no compose.yaml (desenvolvimento local).
  */
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,

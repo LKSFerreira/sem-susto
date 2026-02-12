@@ -17,7 +17,7 @@ import secrets
 from dotenv import load_dotenv
 
 # Carrega variáveis do arquivo .env de desenvolvimento
-load_dotenv('.env.development')
+load_dotenv('.env')
 
 # Importar psycopg2 para conexão com PostgreSQL
 try:
@@ -33,7 +33,7 @@ except ImportError:
 
 DATABASE_URL = os.getenv('DATABASE_URL')
 if not DATABASE_URL:
-    print('❌ DATABASE_URL não definida no .env.development')
+    print('❌ DATABASE_URL não definida. Configure no .env ou nas variáveis de ambiente.')
     sys.exit(1)
 
 # Charset Base30 — mesmos caracteres usados no TypeScript (api/_lib/tokens.ts)

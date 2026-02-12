@@ -34,13 +34,13 @@ AMBIENTE = os.getenv("PG_ENV")
 # CONFIGURAÇÃO DE CONEXÃO
 # =============================================================================
 # Carrega variáveis do arquivo .env de desenvolvimento
-load_dotenv(".env.development")
+load_dotenv(".env")
 
 # Pega a Connection String (Fonte da Verdade)
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 if not DATABASE_URL:
-    print("❌ Erro: DATABASE_URL não definida no .env.development")
+    print("❌ Erro: DATABASE_URL não definida. Configure no .env ou nas variáveis de ambiente.")
     sys.exit(1)
 
 
