@@ -9,7 +9,7 @@ export interface DadosProdutoExtraidos {
 
 /**
  * Interface para serviços de leitura de rótulos via IA.
- * Permite trocar o provedor (Gemini, OpenAI, Mock) sem afetar a UI.
+ * Permite trocar o provedor (Groq, Mock) sem afetar a UI.
  */
 export interface ServicoLeituraRotulo {
   /**
