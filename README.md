@@ -6,8 +6,8 @@
 
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=white)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Vite](https://img.shields.io/badge/Vite-7-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
-[![Google Gemini](https://img.shields.io/badge/Gemini_AI-Integrated-4285F4?style=for-the-badge&logo=google&logoColor=white)](https://ai.google.dev/)
+[![Vite](https://img.shields.io/badge/Vite-6-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
+[![Groq](https://img.shields.io/badge/Groq-Meta_Llama-F55036?style=for-the-badge&logo=meta&logoColor=white)](https://groq.com/)
 
 [Demonstração](#-demonstração) •
 [Funcionalidades](#-funcionalidades) •
@@ -56,7 +56,7 @@ Consumidores frequentemente perdem o controle do valor total durante compras, re
 
 ### Inteligência Artificial
 
-- **Google Gemini / OpenRouter** — Visão computacional via Strategy Pattern
+- **Groq + Meta Llama** — Llama 4 Scout (visão) e Llama 3.1 8B (texto) via API Groq
 - **Structured Output** — Respostas em JSON com schema validado
 - **html5-qrcode** — Scanner de código de barras via câmera
 
@@ -73,7 +73,7 @@ Consumidores frequentemente perdem o controle do valor total durante compras, re
 ### Pré-requisitos
 
 - [Docker](https://www.docker.com/) instalado
-- Chave de API do [OpenRouter](https://openrouter.ai/) (Recomendado) ou [Google AI Studio](https://aistudio.google.com/)
+- Chave de API do [Groq](https://console.groq.com/keys) (Free tier generoso)
 
 ### Setup com Docker Compose (Recomendado)
 
@@ -84,7 +84,7 @@ cd sem-susto
 
 # 2. Configure as variáveis de ambiente
 cp .env.example .env.local
-# Edite .env.local e adicione sua chave em VITE_OPENROUTER_TOKEN
+# Edite .env.local e adicione sua chave em VITE_GROQ_TOKEN
 
 # 3. Suba os containers (Recomendado)
 # O script detecta seu IP automaticamente para acesso via celular
