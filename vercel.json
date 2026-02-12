@@ -6,6 +6,18 @@
     {
       "source": "/api/cosmos/gtin/:codigo",
       "destination": "/api/cosmos/gtin/:codigo"
+    },
+    {
+      "source": "/api/tokens/gerar",
+      "destination": "/api/tokens/gerar"
+    },
+    {
+      "source": "/api/tokens/ativar",
+      "destination": "/api/tokens/ativar"
+    },
+    {
+      "source": "/api/tokens/consultar",
+      "destination": "/api/tokens/consultar"
     }
   ]
 }
