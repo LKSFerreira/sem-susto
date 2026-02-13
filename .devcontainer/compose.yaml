@@ -61,6 +61,8 @@ services:
       - DATABASE_URL=postgresql://postgres:postgres@database:5432/sem_susto
       - WATCHPACK_POLLING=true
       - HOST_IP=${HOST_IP:-}
+    env_file:
+      - ../.env
     depends_on:
       - database
 
