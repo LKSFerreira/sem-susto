@@ -228,7 +228,21 @@ export const FormularioProduto: React.FC<PropsFormulario> = ({
       return;
     }
 
-    if (tamanho && !REGEX_UNIDADE.test(tamanho)) {
+    if (!marca.trim()) {
+      setErro('A marca do produto é obrigatória.');
+      setCampoComErro('marca');
+      refMarca.current?.focus();
+      return;
+    }
+
+    if (!tamanho.trim()) {
+      setErro('O tamanho do produto é obrigatório.');
+      setCampoComErro('tamanho');
+      refTamanho.current?.focus();
+      return;
+    }
+
+    if (!REGEX_UNIDADE.test(tamanho)) {
       setErro('Tamanho inválido (Ex: 1L, 500g).');
       setCampoComErro('tamanho');
       refTamanho.current?.focus();
@@ -248,8 +262,8 @@ export const FormularioProduto: React.FC<PropsFormulario> = ({
     const novoProduto: Produto = {
       codigo_barras: gtinInicial,
       descricao,
-      marca: marca || 'Genérica',
-      tamanho: tamanho || '-',
+      marca,
+      tamanho,
       preco_estimado: precoNumerico,
       imagem,
     };
@@ -468,8 +482,12 @@ export const FormularioProduto: React.FC<PropsFormulario> = ({
                 <input
                   ref={refMarca}
                   value={marca}
-                  onChange={e => setMarca(e.target.value)}
-                  className={`${classeInput} ${analisandoIA ? 'animate-pulse bg-gray-600' : ''} ${camposFaltantes.includes('marca') && !marca ? 'border-amber-400 ring-1 ring-amber-300' : ''}`}
+                  onChange={e => {
+                    setMarca(e.target.value);
+                    if (campoComErro === 'marca') setCampoComErro(null);
+                  }}
+                  className={`${classeInput} ${analisandoIA ? 'animate-pulse bg-gray-600' : ''} ${campoComErro === 'marca' ? 'border-red-500 ring-2 ring-red-400' : ''
+                    } ${camposFaltantes.includes('marca') && !marca ? 'border-amber-400 ring-1 ring-amber-300' : ''}`}
                   placeholder="Ex: Longa Vida"
                   disabled={analisandoIA}
                 />
