@@ -20,11 +20,11 @@ export default defineConfig({
       usePolling: true,
     },
     proxy: {
-      '/api-cosmos': {
-        target: 'https://api.cosmos.bluesoft.com.br',
+      // Em dev, o Vite precisa fazer proxy para as serverless functions.
+      // Em produção, a Vercel cuida disso automaticamente.
+      '/api': {
+        target: 'http://localhost:3000',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api-cosmos/, ''),
-        secure: false
       }
     }
   },

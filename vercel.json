@@ -8,6 +8,10 @@
       "destination": "/api/cosmos/gtin/:codigo"
     },
     {
+      "source": "/api/ia/analisar",
+      "destination": "/api/ia/analisar"
+    },
+    {
       "source": "/api/tokens/gerar",
       "destination": "/api/tokens/gerar"
     },

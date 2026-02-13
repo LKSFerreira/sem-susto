@@ -9,15 +9,11 @@ import { padronizarDadosProduto } from './ia';
 import { formatarTitulo, extrairTamanho } from './utilitarios';
 import { CosmosAdapter } from './adapters/cosmos.adapter';
 
-// Em desenvolvimento, usa o proxy configurado no vite.config.ts para evitar CORS.
-// Em produção, usa API Route serverless (/api/cosmos) que faz proxy.
-const IS_DEV = import.meta.env.DEV;
-const COSMOS_API_URL = IS_DEV ? '/api-cosmos' : '/api/cosmos/gtin';
-const COSMOS_TOKEN = import.meta.env.VITE_COSMOS_TOKEN;
-
-if (!COSMOS_TOKEN) {
-  console.warn('⚠️ Token COSMOS não configurado (.env)');
-}
+/**
+ * Em desenvolvimento e produção, SEMPRE usa o proxy serverless.
+ * O token Cosmos fica no servidor — o frontend NUNCA tem acesso.
+ */
+const COSMOS_API_URL = '/api/cosmos/gtin';
 
 /**
  * Interface exata dos dados retornados pela API Cosmos.
@@ -57,17 +53,13 @@ export interface ProdutoCosmosResponse {
  */
 export async function buscarProdutoCosmos(gtin: string): Promise<Produto | null> {
   try {
-    // Nova rota: /api/cosmos/gtin/[codigo] (em produção) ou /api-cosmos/gtins/[codigo].json (em dev)
-    const url = import.meta.env.DEV
-      ? `${COSMOS_API_URL}/gtins/${gtin}.json`
-      : `${COSMOS_API_URL}/${gtin}`;
+    // Sempre via proxy — token fica no servidor
+    const url = `${COSMOS_API_URL}/${gtin}`;
 
     const response = await fetch(url, {
       method: 'GET',
       headers: {
-        'User-Agent': 'Cosmos-API-Request',
         'Content-Type': 'application/json',
-        'X-Cosmos-Token': COSMOS_TOKEN,
       },
     });
 

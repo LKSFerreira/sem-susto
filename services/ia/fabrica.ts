@@ -4,17 +4,18 @@ import { ServicoIAMock } from "./mock";
 
 export class FabricaServicoIA {
   static criar(): ServicoLeituraRotulo {
-    const apiKey = import.meta.env.VITE_GROQ_TOKEN;
-    
-    // Sem chave válida → Mock (modo offline/demonstração)
-    if (!apiKey || apiKey === 'PLACEHOLDER_API_KEY') {
-      console.log("🏭 FabricaIA: Sem chave válida, usando MOCK.");
+    // Em modo de teste/demonstração, a variável VITE_MOCK_IA=true ativa o mock.
+    // Caso contrário, SEMPRE usa o proxy serverless (sem chave no frontend).
+    const usarMock = import.meta.env.VITE_MOCK_IA === 'true';
+
+    if (usarMock) {
+      console.log("🏭 FabricaIA: Usando MOCK (modo demonstração).");
       return new ServicoIAMock();
     }
 
-    // Groq: Free tier generoso, modelos Meta Llama
-    console.log("🏭 FabricaIA: Usando serviço GROQ");
-    return new ServicoIAGroq(apiKey);
+    // O proxy serverless cuida da chave — o frontend não precisa dela
+    console.log("🏭 FabricaIA: Usando serviço GROQ (via proxy serverless)");
+    return new ServicoIAGroq();
   }
 }
 

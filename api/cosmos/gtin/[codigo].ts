@@ -21,7 +21,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Token vem das variáveis de ambiente da Vercel
-    const cosmosToken = process.env.VITE_COSMOS_TOKEN;
+    const cosmosToken = process.env.COSMOS_TOKEN;
 
     if (!cosmosToken) {
         return res.status(500).json({ error: 'Token COSMOS não configurado no servidor' });

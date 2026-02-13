@@ -1,81 +1,48 @@
-import OpenAI from 'openai';
 import { ServicoLeituraRotulo, DadosProdutoExtraidos } from "./tipos";
-
 import { logger } from "../logger";
 import { formatarTitulo } from "../utilitarios";
 
+/**
+ * Serviço de IA via proxy serverless.
+ *
+ * A chave Groq fica no servidor (api/ia/analisar.ts).
+ * O frontend NUNCA tem acesso à chave — apenas envia
+ * a imagem/texto para o proxy, que chama a Groq.
+ */
 export class ServicoIAGroq implements ServicoLeituraRotulo {
-  private client: OpenAI;
+  // Modelos ficam no servidor (api/ia/analisar.ts)
+  // O frontend não precisa saber qual modelo é usado
 
-  // Modelos Atualizados (Baseado na lista Free Tier)
-  // Vision: Llama 4 Scout (Multimodal)
-  private readonly modeloVision: string = 'meta-llama/llama-4-scout-17b-16e-instruct';
-
-  // Texto: Llama 3.1 8B Instant (Alta velocidade, alto RPD)
-  private readonly modeloTexto: string = 'llama-3.1-8b-instant';
-
-  constructor(apiKey: string) {
-    logger.info("⚡ Inicializando Groq (Via OpenAI SDK)", { visionModel: this.modeloVision, textModel: this.modeloTexto });
-
-    this.client = new OpenAI({
-      baseURL: 'https://api.groq.com/openai/v1',
-      apiKey: apiKey,
-      dangerouslyAllowBrowser: true,
-    });
+  constructor() {
+    logger.info("⚡ Inicializando serviço IA (via proxy serverless)");
   }
 
   async extrairDados(imagemBase64: string): Promise<DadosProdutoExtraidos | null> {
     try {
-      logger.info("📤 Enviando imagem para Groq Vision...", { model: this.modeloVision });
+      logger.info("📤 Enviando imagem para proxy IA...");
 
-      const dataUri = imagemBase64.startsWith('data:')
-        ? imagemBase64
-        : `data:image/jpeg;base64,${imagemBase64}`;
-
-      const prompt = `Analise este rótulo de produto. Extraia Nome, Marca e Tamanho/Peso.
-      Responda EXCLUSIVAMENTE um JSON puro, sem markdown, no formato:
-      { "descricao": "...", "marca": "...", "tamanho": "..." }
-      
-      Regras:
-      1. descricao: Nome completo e claro do produto.
-      2. marca: Marca do fabricante (ex: Coca-Cola, Nestlé).
-      3. tamanho: Peso/Volume com unidade (ex: 350ml, 1kg).`;
-
-      const completion = await this.client.chat.completions.create({
-        model: this.modeloVision,
-        messages: [
-          {
-            role: 'user',
-            content: [
-              { type: 'text', text: prompt },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: dataUri
-                }
-              }
-            ]
-          },
-        ],
-        temperature: 0.1,
-        max_tokens: 1024,
+      const resposta = await fetch('/api/ia/analisar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tipo: 'imagem',
+          conteudo: imagemBase64,
+        }),
       });
 
-      const respostaTexto = completion.choices[0]?.message?.content;
-
-      if (respostaTexto) {
-        const jsonMatch = respostaTexto.match(/\{[\s\S]*\}/);
-        const jsonLimpo = jsonMatch ? jsonMatch[0] : respostaTexto;
-        const dados = JSON.parse(jsonLimpo) as DadosProdutoExtraidos;
-
-        // Padronização Title Case
-        if (dados.descricao) dados.descricao = formatarTitulo(dados.descricao);
-        if (dados.marca) dados.marca = formatarTitulo(dados.marca);
-
-        return dados;
+      if (!resposta.ok) {
+        const erro = await resposta.json().catch(() => ({}));
+        logger.error("❌ Erro no proxy IA", erro);
+        throw new Error(erro.erro || `Erro ${resposta.status}`);
       }
 
-      return null;
+      const dados = await resposta.json() as DadosProdutoExtraidos;
+
+      // Padronização Title Case (segurança extra, caso o servidor não faça)
+      if (dados.descricao) dados.descricao = formatarTitulo(dados.descricao);
+      if (dados.marca) dados.marca = formatarTitulo(dados.marca);
+
+      return dados;
 
     } catch (error: any) {
       logger.error("❌ Erro Groq Vision", error);
@@ -85,50 +52,31 @@ export class ServicoIAGroq implements ServicoLeituraRotulo {
 
   async extrairDadosDeTexto(textoEntrada: string): Promise<DadosProdutoExtraidos | null> {
     try {
-      logger.info("📝 Padronizando dados via Groq...", { model: this.modeloTexto });
+      logger.info("📝 Padronizando dados via proxy IA...");
 
-      const prompt = `Analise o seguinte texto de produto: "${textoEntrada}".
-      
-      Tarefa: Padronizar e extrair Nome Completo, Marca e Tamanho.
-      
-      REGRAS CRÍTICAS:
-      1. descricao: Nome COMPLETO do produto (ex: "Nescau 2.0", não apenas "2.0"). 
-         - Sempre inclua o nome comercial completo.
-         - Remova códigos estranhos e caracteres especiais.
-         - Use Title Case.
-      2. marca: APENAS a marca do fabricante (ex: "Nestlé", "Coca-Cola").
-         - NÃO inclua o nome do produto na marca.
-         - Se houver vírgula, pegue apenas a primeira parte que é a marca real.
-         - Se não encontrar marca, use "Genérica".
-      3. tamanho: Peso/Volume padronizado (ex: 2L, 500g, 350ml).
-      
-      EXEMPLOS:
-      - "NESCAU 2.0 CEREAL MATINAL NESTLE 400G" → { "descricao": "Nescau 2.0 Cereal Matinal", "marca": "Nestlé", "tamanho": "400g" }
-      - "COCA COLA LT 350ML" → { "descricao": "Coca Cola Lata", "marca": "Coca-Cola", "tamanho": "350ml" }
-      
-      SEM PREAMBULO. APENAS JSON:
-      { "descricao": "...", "marca": "...", "tamanho": "..." }`;
-
-      const completion = await this.client.chat.completions.create({
-        model: this.modeloTexto,
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.1,
-        response_format: { type: 'json_object' }
+      const resposta = await fetch('/api/ia/analisar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tipo: 'texto',
+          conteudo: textoEntrada,
+        }),
       });
 
-      const respostaTexto = completion.choices[0]?.message?.content;
-
-      if (respostaTexto) {
-        const dados = JSON.parse(respostaTexto) as DadosProdutoExtraidos;
-
-        // Padronização final via código (segurança)
-        if (dados.descricao) dados.descricao = formatarTitulo(dados.descricao);
-        if (dados.marca) dados.marca = formatarTitulo(dados.marca);
-        if (dados.tamanho) dados.tamanho = dados.tamanho.toUpperCase();
-
-        return dados;
+      if (!resposta.ok) {
+        const erro = await resposta.json().catch(() => ({}));
+        console.warn("Erro ao padronizar texto:", erro);
+        return null;
       }
-      return null;
+
+      const dados = await resposta.json() as DadosProdutoExtraidos;
+
+      // Padronização final via código (segurança)
+      if (dados.descricao) dados.descricao = formatarTitulo(dados.descricao);
+      if (dados.marca) dados.marca = formatarTitulo(dados.marca);
+      if (dados.tamanho) dados.tamanho = dados.tamanho.toUpperCase();
+
+      return dados;
 
     } catch (error) {
       console.warn("Erro ao padronizar texto Groq:", error);
