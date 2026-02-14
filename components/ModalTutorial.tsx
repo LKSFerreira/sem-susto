@@ -12,11 +12,10 @@ interface PropsModalTutorial {
  * Tutorial visual de primeiro acesso.
  *
  * Foco em elementos visuais com mínimo texto.
- * Usuários ignoram texto - absorvem imagens e ícones.
  */
 export const ModalTutorial: React.FC<PropsModalTutorial> = ({ aoFechar }) => {
   const [slideAtual, setSlideAtual] = useState(0);
-  const totalSlides = 2; // Intro + Scanner (Foto movida para TutorialFoto contextual)
+  const totalSlides = 2; // Intro + Scanner
 
   const avancar = () => {
     if (slideAtual < totalSlides - 1) {
@@ -39,8 +38,8 @@ export const ModalTutorial: React.FC<PropsModalTutorial> = ({ aoFechar }) => {
 
   return (
     <div className="fixed inset-0 z-[100] flex flex-col">
-      {/* Camada de desfoque sobre o app */}
-      <div className="absolute inset-0 bg-gradient-to-b from-verde-600/95 to-verde-800/95 backdrop-blur-sm"></div>
+      {/* Camada de degradê ajustada: verde vibrante esticado até a base, escurecendo no fim */}
+      <div className="absolute inset-0 bg-gradient-to-b from-verde-500 via-verde-500 via-[65%] to-verde-900 backdrop-blur-md"></div>
 
       {/* Conteúdo do tutorial */}
       <div className="relative flex-1 flex flex-col z-10">
@@ -60,10 +59,10 @@ export const ModalTutorial: React.FC<PropsModalTutorial> = ({ aoFechar }) => {
           {slideAtual === 0 && (
             <div className="flex flex-col items-center text-center animate-fade-in max-w-sm">
               {/* Título e subtítulo */}
-              <h1 className="text-white text-2xl font-bold mb-2">Boas Vindas</h1>
-              <p className="text-white/70 text-base mb-6">Sem susto na hora do caixa</p>
+              <h1 className="text-white text-3xl font-bold mb-3">DICAS DE USO</h1>
+              <p className="text-white/70 text-xl mb-6">Sem susto na hora do caixa</p>
 
-              {/* Fluxo visual: Escanear → Total → Sem susto */}
+              {/* Fluxo visual: Escanear → Total */}
               <div className="flex flex-col items-center gap-6 mb-8">
                 {/* Passo 1: Escanear produto */}
                 <div className="flex items-center gap-4">
@@ -71,7 +70,7 @@ export const ModalTutorial: React.FC<PropsModalTutorial> = ({ aoFechar }) => {
                     <i className="fas fa-barcode text-white text-3xl"></i>
                   </div>
                   <div className="flex flex-col items-start">
-                    <span className="text-white text-lg font-semibold">Escaneou?</span>
+                    <span className="text-white text-2xl font-bold">Você escaneia !</span>
                   </div>
                 </div>
 
@@ -84,43 +83,8 @@ export const ModalTutorial: React.FC<PropsModalTutorial> = ({ aoFechar }) => {
                     <i className="fas fa-calculator text-white text-3xl"></i>
                   </div>
                   <div className="flex flex-col items-start">
-                    <span className="text-white text-lg font-semibold">Somou!</span>
+                    <span className="text-white text-2xl font-bold">O App soma !</span>
                   </div>
-                </div>
-
-                {/* Seta para baixo */}
-                <i className="fas fa-arrow-down text-white/40 text-xl"></i>
-
-                {/* Passo 3: Resultado - sem susto no caixa */}
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center border-2 border-white/40">
-                    <i className="fas fa-smile-beam text-blue-500 text-3xl"></i>
-                  </div>
-                  <div className="flex flex-col items-start">
-                    <span className="text-white text-lg font-bold">Sem Susto!</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Ilustração de comparação visual: confuso vs tranquilo */}
-              <div className="flex items-center gap-6 bg-white/10 px-6 py-4 rounded-2xl">
-                {/* Antes: surpresa no caixa */}
-                <div className="flex flex-col items-center">
-                  <div className="w-12 h-12 bg-red-500/30 rounded-full flex items-center justify-center mb-1">
-                    <i className="fas fa-surprise text-red-400 text-2xl"></i>
-                  </div>
-                  <span className="text-red-400 text-xs font-bold">Antes</span>
-                </div>
-
-                {/* Seta */}
-                <i className="fas fa-arrow-right text-white/40 text-lg"></i>
-
-                {/* Depois: tranquilo */}
-                <div className="flex flex-col items-center">
-                  <div className="w-12 h-12 bg-blue-500/30 rounded-full flex items-center justify-center mb-1">
-                    <i className="fas fa-smile text-blue-500 text-2xl"></i>
-                  </div>
-                  <span className="text-blue-400 text-xs font-bold">Depois</span>
                 </div>
               </div>
             </div>
@@ -140,28 +104,52 @@ export const ModalTutorial: React.FC<PropsModalTutorial> = ({ aoFechar }) => {
                   <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-white rounded-br-lg"></div>
                 </div>
 
-                {/* Linha de scan animada */}
-                <div className="absolute left-4 right-4 top-1/2 h-1 bg-red-400 rounded-full animate-pulse shadow-lg shadow-red-500/50"></div>
-
-                {/* Código de barras estilizado - altura uniforme, larguras variadas */}
-                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-[2px]">
+                {/* Código de barras estilizado - Aumentado e escurecido (menos opacidade) */}
+                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-[3px]">
                   {[2, 1, 3, 1, 2, 1, 1, 3, 1, 2, 1, 3, 2, 1, 1, 2, 3, 1, 2, 1, 3, 1, 2].map(
                     (w, i) => (
                       <div
                         key={i}
-                        className="bg-white h-16 rounded-sm"
-                        style={{ width: `${w * 2}px` }}
+                        className="bg-white h-24 rounded-sm opacity-80"
+                        style={{ width: `${w * 3}px` }}
                       ></div>
                     )
                   )}
                 </div>
 
-                {/* Setas indicando centralização */}
-                <div className="absolute -left-2 top-1/2 -translate-y-1/2 text-white text-2xl animate-bounce-right">
-                  <i className="fas fa-chevron-right"></i>
+                {/* Linha de scan animada - Movida para frente do código de barras (z-index natural) */}
+                <div className="absolute left-4 right-4 top-1/2 -translate-y-1/2 h-1 bg-red-400 rounded-full animate-pulse shadow-lg shadow-red-500/50"></div>
+
+                {/* Setas indicando centralização - Aumentadas e recalculadas para manter alinhamento perfeito (-mt-6 = metade de h-12) */}
+                <div className="absolute -left-6 top-1/2 -mt-6 flex items-center justify-center w-12 h-12 animate-bounce-right">
+                  <svg
+                    width="40"
+                    height="40"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="text-white"
+                  >
+                    <path d="M10 18l6-6-6-6" /> {/* Ajustado path para centralizar o desenho no viewbox maior */}
+                  </svg>
                 </div>
-                <div className="absolute -right-2 top-1/2 -translate-y-1/2 text-white text-2xl animate-bounce-left">
-                  <i className="fas fa-chevron-left"></i>
+                <div className="absolute -right-6 top-1/2 -mt-6 flex items-center justify-center w-12 h-12 animate-bounce-left">
+                  <svg
+                    width="40"
+                    height="40"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="text-white"
+                  >
+                    <path d="M14 18l-6-6 6-6" /> {/* Ajustado path para centralizar o desenho no viewbox maior */}
+                  </svg>
                 </div>
               </div>
 
@@ -173,15 +161,15 @@ export const ModalTutorial: React.FC<PropsModalTutorial> = ({ aoFechar }) => {
               </div>
 
               {/* Texto mínimo */}
-              <p className="text-white/80 text-lg font-medium">Centralize o código</p>
+              <p className="text-white/90 text-2xl font-bold">Centralize o código de barras</p>
             </div>
           )}
         </div>
 
-        {/* Navegação inferior - mais próxima do centro */}
-        <div className="p-6 pb-8">
+        {/* Navegação inferior - Subindo conforme sugestão otimizada */}
+        <div className="p-6 pb-44 transition-all">
           {/* Indicadores de progresso */}
-          <div className="flex justify-center gap-2 mb-4">
+          <div className="flex justify-center gap-2 mb-6">
             {Array.from({ length: totalSlides }).map((_, i) => (
               <div
                 key={i}
@@ -192,7 +180,7 @@ export const ModalTutorial: React.FC<PropsModalTutorial> = ({ aoFechar }) => {
           </div>
 
           {/* Botões de navegação */}
-          <div className="flex gap-3">
+          <div className="flex gap-3 max-w-sm mx-auto">
             {slideAtual > 0 && (
               <button
                 onClick={voltar}
@@ -204,19 +192,21 @@ export const ModalTutorial: React.FC<PropsModalTutorial> = ({ aoFechar }) => {
 
             <button
               onClick={avancar}
-              className="flex-1 h-14 bg-verde-500 text-white font-bold rounded-full flex items-center justify-center gap-2 shadow-lg hover:bg-verde-600 active:scale-95 transition-all"
+              className="relative flex-1 h-14 bg-verde-500 text-white text-lg font-bold rounded-full flex items-center justify-center gap-2 shadow-lg hover:bg-verde-600 active:scale-95 transition-all animate-pulse-glow"
             >
-              {slideAtual === totalSlides - 1 ? (
-                <>
-                  <i className="fas fa-check"></i>
-                  <span>Começar</span>
-                </>
-              ) : (
-                <>
-                  <span>Próximo</span>
-                  <i className="fas fa-arrow-right"></i>
-                </>
-              )}
+              <div className="flex items-center gap-2">
+                {slideAtual === totalSlides - 1 ? (
+                  <>
+                    <i className="fas fa-check"></i>
+                    <span>Começar</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Próximo</span>
+                    <i className="fas fa-arrow-right"></i>
+                  </>
+                )}
+              </div>
             </button>
           </div>
         </div>
@@ -224,15 +214,28 @@ export const ModalTutorial: React.FC<PropsModalTutorial> = ({ aoFechar }) => {
         {/* Estilos para animações customizadas */}
         <style>{`
         @keyframes bounce-right {
-          0%, 100% { transform: translateY(-50%) translateX(0); }
-          50% { transform: translateY(-50%) translateX(4px); }
+          0%, 100% { transform: translateX(0); }
+          50% { transform: translateX(4px); }
         }
         @keyframes bounce-left {
-          0%, 100% { transform: translateY(-50%) translateX(0); }
-          50% { transform: translateY(-50%) translateX(-4px); }
+          0%, 100% { transform: translateX(0); }
+          50% { transform: translateX(-4px); }
+        }
+        /* Glow intenso e pulsante (Luz de fundo) */
+        @keyframes pulse-glow {
+          0% { 
+            box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.8);
+          }
+          70% { 
+            box-shadow: 0 0 30px 20px rgba(34, 197, 94, 0);
+          }
+          100% { 
+            box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+          }
         }
         .animate-bounce-right { animation: bounce-right 1s infinite; }
         .animate-bounce-left { animation: bounce-left 1s infinite; }
+        .animate-pulse-glow { animation: pulse-glow 2s infinite; }
       `}</style>
       </div>
     </div>
