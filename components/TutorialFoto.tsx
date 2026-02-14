@@ -21,7 +21,9 @@ export const TutorialFoto: React.FC<PropsTutorialFoto> = ({ aoFechar }) => {
     };
 
     return (
-        <div className="fixed inset-0 z-[110] bg-gradient-to-b from-verde-600/95 to-verde-800/95 backdrop-blur-sm flex flex-col items-center justify-center p-6">
+        <div className="fixed inset-0 z-[110] flex flex-col items-center justify-center p-6">
+            {/* Fundo replicado do ModalTutorial: Degradê esticado e Blur intenso */}
+            <div className="absolute inset-0 bg-gradient-to-b from-verde-500 via-verde-500 via-[55%] to-verde-900 backdrop-blur-md -z-10"></div>
 
             {/* Botão Pular (canto superior direito) */}
             <button
@@ -34,8 +36,8 @@ export const TutorialFoto: React.FC<PropsTutorialFoto> = ({ aoFechar }) => {
             {/* Conteúdo Central */}
             <div className="flex flex-col items-center text-center animate-fade-in max-w-sm">
 
-                {/* Comparação visual: foto ruim vs foto boa */}
-                <div className="flex gap-4 mb-6 items-center justify-center">
+                {/* Comparação visual: foto ruim vs foto boa - Aumentada e posicionada mais acima */}
+                <div className="flex gap-2 mb-20 items-center justify-center transform scale-115 -translate-y-12">
 
                     {/* 
                         =============== LADO ESQUERDO: FOTO RUIM (SIMULADA) ===============
@@ -143,32 +145,49 @@ export const TutorialFoto: React.FC<PropsTutorialFoto> = ({ aoFechar }) => {
                     </div>
                 </div>
 
-                {/* Ícones com textos explicativos agradáveis */}
-                <div className="flex flex-col gap-3 w-full max-w-xs mb-20">
+                {/* Ícones com textos explicativos agradáveis - Fonte Aumentada e Distribuídos Melhor */}
+                <div className="flex flex-col gap-6 w-full max-w-xs mb-20 transform -translate-y-6">
                     <div className="bg-white/10 backdrop-blur-md rounded-xl p-3 flex items-center gap-3 border border-white/20">
                         <div className="w-10 h-10 bg-verde-100 rounded-full flex items-center justify-center shrink-0">
                             <i className="fas fa-camera text-verde-600"></i>
                         </div>
-                        <span className="text-white font-medium text-lg text-left">Foto legível</span>
+                        <span className="text-white font-bold text-xl text-left">Foto legível</span>
                     </div>
 
                     <div className="bg-white/10 backdrop-blur-md rounded-xl p-3 flex items-center gap-3 border border-white/20">
                         <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center shrink-0">
                             <i className="fas fa-tag text-blue-600"></i>
                         </div>
-                        <span className="text-white font-medium text-lg text-left">Rótulo da frente</span>
+                        <span className="text-white font-bold text-xl text-left">Rótulo da frente</span>
                     </div>
                 </div>
             </div>
 
-            {/* Botão Entendi (rodapé) */}
+            {/* Botão Entendi (rodapé) - Com Pulse Glow Intenso */}
             <button
                 onClick={fecharESalvar}
-                className="bg-verde-500 text-white font-bold py-4 px-12 rounded-xl hover:bg-verde-600 active:scale-95 transition-all flex items-center justify-center gap-2 shadow-lg"
+                className="bg-verde-500 text-white font-bold py-4 px-12 rounded-xl hover:bg-verde-600 active:scale-95 transition-all flex items-center justify-center gap-2 shadow-lg animate-pulse-glow"
             >
                 <i className="fas fa-check"></i>
                 Entendi!
             </button>
+
+            {/* Estilos para animações customizadas (Glow) */}
+            <style>{`
+                /* Glow intenso e pulsante (Luz de fundo) */
+                @keyframes pulse-glow {
+                    0% { 
+                        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.8);
+                    }
+                    70% { 
+                        box-shadow: 0 0 30px 20px rgba(34, 197, 94, 0);
+                    }
+                    100% { 
+                        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+                    }
+                }
+                .animate-pulse-glow { animation: pulse-glow 2s infinite; }
+            `}</style>
         </div>
     );
 };
